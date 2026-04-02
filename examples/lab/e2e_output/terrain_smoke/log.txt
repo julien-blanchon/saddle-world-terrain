@@ -1,0 +1,7 @@
+[frame 1] WaitFrames(80)
+[frame 81] Custom(...)
+[frame 81] Custom(...)
+[frame 81] Screenshot("terrain_smoke")
+[frame 81] Custom(...)
+[frame 81] [assertions] terrain_smoke: ALL PASSED (0/0 passed, 0 failed)
+Scenario 'terrain_smoke' completed after 81 frames

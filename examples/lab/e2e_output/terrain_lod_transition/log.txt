@@ -1,0 +1,10 @@
+[frame 1] Custom(...)
+[frame 1] WaitFrames(12)
+[frame 13] Screenshot("lod_near")
+[frame 13] Custom(...)
+[frame 13] WaitFrames(60)
+[frame 73] Custom(...)
+[frame 73] Screenshot("lod_far")
+[frame 73] Custom(...)
+[frame 73] [assertions] terrain_lod_transition: ALL PASSED (0/0 passed, 0 failed)
+Scenario 'terrain_lod_transition' completed after 73 frames

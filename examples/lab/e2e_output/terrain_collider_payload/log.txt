@@ -1,0 +1,7 @@
+[frame 1] Custom(...)
+[frame 1] WaitFrames(40)
+[frame 41] Custom(...)
+[frame 41] Screenshot("collider_payload")
+[frame 41] Custom(...)
+[frame 41] [assertions] terrain_collider_payload: ALL PASSED (0/0 passed, 0 failed)
+Scenario 'terrain_collider_payload' completed after 41 frames

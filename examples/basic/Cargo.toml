@@ -1,0 +1,13 @@
+[package]
+name = "saddle-world-terrain-example-basic"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+bevy = { workspace = true }
+saddle-world-terrain = { workspace = true }
+saddle-world-terrain-example-common = { path = "../common" }
+
+[lints]
+workspace = true

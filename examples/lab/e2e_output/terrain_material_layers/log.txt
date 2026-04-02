@@ -1,0 +1,11 @@
+[frame 1] Custom(...)
+[frame 1] WaitFrames(20)
+[frame 21] Custom(...)
+[frame 21] Screenshot("layers_lowland")
+[frame 21] Custom(...)
+[frame 21] WaitFrames(25)
+[frame 46] Custom(...)
+[frame 46] Screenshot("layers_highland")
+[frame 46] Custom(...)
+[frame 46] [assertions] terrain_material_layers: ALL PASSED (0/0 passed, 0 failed)
+Scenario 'terrain_material_layers' completed after 46 frames
