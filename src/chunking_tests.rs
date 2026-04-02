@@ -24,6 +24,12 @@ fn terrain_chunk_for_local_rejects_positions_outside_extent() {
         ..default()
     };
 
-    assert_eq!(terrain_chunk_for_local(Vec2::new(64.1, 16.0), &config), None);
-    assert_eq!(terrain_chunk_for_local(Vec2::new(-0.1, 16.0), &config), None);
+    assert_eq!(
+        terrain_chunk_for_local(Vec2::new(64.1, 16.0), &config),
+        None
+    );
+    assert_eq!(
+        terrain_chunk_for_local(Vec2::new(-0.1, 16.0), &config),
+        None
+    );
 }

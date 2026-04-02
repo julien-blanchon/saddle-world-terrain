@@ -17,6 +17,9 @@ fn setup(mut commands: Commands, mut debug: ResMut<saddle_world_terrain::Terrain
     config.streaming.collider_radius = 70.0;
     let terrain = common::spawn_terrain(&mut commands, config);
     common::spawn_scene(&mut commands, terrain);
-    common::enable_debug(&mut debug, saddle_world_terrain::TerrainDebugColorMode::Natural);
+    common::enable_debug(
+        &mut debug,
+        saddle_world_terrain::TerrainDebugColorMode::Natural,
+    );
     debug.show_collider_bounds = true;
 }

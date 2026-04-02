@@ -44,7 +44,9 @@ pub fn generated_dataset(dimensions: UVec2) -> TerrainDataset {
         })
         .collect();
 
-    base.with_weight_map(saddle_world_terrain::TerrainWeightMap::from_rgba(dimensions, weights).unwrap())
+    base.with_weight_map(
+        saddle_world_terrain::TerrainWeightMap::from_rgba(dimensions, weights).unwrap(),
+    )
 }
 
 pub fn default_config() -> TerrainConfig {

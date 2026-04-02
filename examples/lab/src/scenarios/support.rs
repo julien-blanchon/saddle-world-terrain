@@ -11,7 +11,9 @@ pub fn entity_by_name(world: &mut World, name: &str) -> Option<Entity> {
 }
 
 pub fn diagnostics(world: &World) -> saddle_world_terrain::TerrainDiagnostics {
-    world.resource::<saddle_world_terrain::TerrainDiagnostics>().clone()
+    world
+        .resource::<saddle_world_terrain::TerrainDiagnostics>()
+        .clone()
 }
 
 pub fn overlay_text(world: &mut World) -> Option<String> {
@@ -21,7 +23,9 @@ pub fn overlay_text(world: &mut World) -> Option<String> {
 
 pub fn focus_stats(world: &mut World) -> Option<saddle_world_terrain::TerrainProbeSample> {
     let focus = entity_by_name(world, "Lab Focus")?;
-    world.get::<saddle_world_terrain::TerrainProbeSample>(focus).cloned()
+    world
+        .get::<saddle_world_terrain::TerrainProbeSample>(focus)
+        .cloned()
 }
 
 pub fn chunk_keys(world: &mut World) -> HashSet<(IVec2, u8)> {
@@ -39,10 +43,16 @@ pub fn lod_levels(world: &mut World) -> HashSet<u8> {
 
 pub fn lod_count(world: &mut World, lod: u8) -> usize {
     let mut query = world.query::<&TerrainChunk>();
-    query.iter(world).filter(|chunk| chunk.key.lod == lod).count()
+    query
+        .iter(world)
+        .filter(|chunk| chunk.key.lod == lod)
+        .count()
 }
 
 pub fn collider_chunk_coords(world: &mut World) -> HashSet<IVec2> {
     let mut query = world.query::<(&TerrainChunk, &TerrainColliderData)>();
-    query.iter(world).map(|(chunk, _)| chunk.key.coord).collect()
+    query
+        .iter(world)
+        .map(|(chunk, _)| chunk.key.coord)
+        .collect()
 }

@@ -241,7 +241,8 @@ fn move_focus(
         }
 
         if intent != Vec2::ZERO {
-            let sprint = if input.pressed(KeyCode::ShiftLeft) || input.pressed(KeyCode::ShiftRight) {
+            let sprint = if input.pressed(KeyCode::ShiftLeft) || input.pressed(KeyCode::ShiftRight)
+            {
                 1.8
             } else {
                 1.0

@@ -1,7 +1,7 @@
 use bevy::{color::palettes::css, prelude::*, reflect::Reflect};
 
 use crate::{
-    TerrainColliderData, TerrainChunkState, TerrainFocus, TerrainFocusPoints, TerrainProbe,
+    TerrainChunkState, TerrainColliderData, TerrainFocus, TerrainFocusPoints, TerrainProbe,
     TerrainProbeSample, TerrainRoot, TerrainRootStats, components::TerrainChunkBounds,
     config::TerrainConfig,
 };
@@ -86,7 +86,11 @@ pub(crate) fn draw_debug_gizmos(
 
             if debug.show_collider_bounds && collider.is_some() {
                 gizmos.cube(
-                    oriented_bounds(chunk_transform, center + Vec3::Y * 0.35, size + Vec3::splat(0.2)),
+                    oriented_bounds(
+                        chunk_transform,
+                        center + Vec3::Y * 0.35,
+                        size + Vec3::splat(0.2),
+                    ),
                     Color::from(css::SPRING_GREEN),
                 );
             }
@@ -179,7 +183,12 @@ fn chunk_state_color(state: TerrainChunkState) -> Color {
     }
 }
 
-fn draw_focus_gizmos(gizmos: &mut Gizmos, position: Vec3, visual_radius: f32, collider_radius: f32) {
+fn draw_focus_gizmos(
+    gizmos: &mut Gizmos,
+    position: Vec3,
+    visual_radius: f32,
+    collider_radius: f32,
+) {
     gizmos.circle(
         Isometry3d::new(position, Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
         visual_radius,

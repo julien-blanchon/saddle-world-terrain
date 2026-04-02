@@ -1,5 +1,8 @@
 use super::*;
-use crate::{TerrainBundle, TerrainConfig, TerrainDataset, TerrainFocus, TerrainPlugin, TerrainProbe, TerrainProbeSample};
+use crate::{
+    TerrainBundle, TerrainConfig, TerrainDataset, TerrainFocus, TerrainPlugin, TerrainProbe,
+    TerrainProbeSample,
+};
 use bevy::gizmos::GizmoPlugin;
 use bevy::tasks::{AsyncComputeTaskPool, TaskPoolBuilder};
 use std::{thread, time::Duration};
@@ -163,7 +166,9 @@ fn probe_sample_is_removed_when_probe_leaves_the_terrain() {
         .insert(Transform::from_xyz(200.0, 0.0, 200.0));
     app.world_mut()
         .entity_mut(probe)
-        .insert(GlobalTransform::from(Transform::from_xyz(200.0, 0.0, 200.0)));
+        .insert(GlobalTransform::from(Transform::from_xyz(
+            200.0, 0.0, 200.0,
+        )));
 
     app.update();
     assert!(app.world().get::<TerrainProbeSample>(probe).is_none());

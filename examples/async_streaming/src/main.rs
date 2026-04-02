@@ -26,5 +26,8 @@ fn setup(mut commands: Commands, mut debug: ResMut<saddle_world_terrain::Terrain
         },
     ]));
     common::spawn_scene(&mut commands, terrain);
-    common::enable_debug(&mut debug, saddle_world_terrain::TerrainDebugColorMode::Natural);
+    common::enable_debug(
+        &mut debug,
+        saddle_world_terrain::TerrainDebugColorMode::Natural,
+    );
 }
