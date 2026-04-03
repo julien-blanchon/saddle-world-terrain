@@ -34,6 +34,7 @@ impl Default for TerrainBlendRange {
 pub struct TerrainLayer {
     pub name: String,
     pub color: Color,
+    pub texture_index: Option<u32>,
     pub explicit_weight_index: Option<usize>,
     pub height_range: Option<TerrainBlendRange>,
     pub slope_range_degrees: Option<TerrainBlendRange>,
@@ -45,6 +46,7 @@ impl TerrainLayer {
         Self {
             name: name.into(),
             color,
+            texture_index: None,
             explicit_weight_index: None,
             height_range: None,
             slope_range_degrees: None,
@@ -54,6 +56,11 @@ impl TerrainLayer {
 
     pub fn with_weight_channel(mut self, channel: usize) -> Self {
         self.explicit_weight_index = Some(channel);
+        self
+    }
+
+    pub fn with_texture_index(mut self, texture_index: u32) -> Self {
+        self.texture_index = Some(texture_index);
         self
     }
 
@@ -73,6 +80,34 @@ impl TerrainLayer {
     }
 }
 
+#[derive(Reflect, Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum TerrainTextureProjection {
+    #[default]
+    Uv,
+    Triplanar,
+}
+
+#[derive(Reflect, Clone, Debug)]
+pub struct TerrainTextureArraySettings {
+    pub albedo_array: Handle<Image>,
+    pub normal_array: Option<Handle<Image>>,
+    pub scale: Vec2,
+    pub projection: TerrainTextureProjection,
+    pub normal_map_strength: f32,
+}
+
+impl Default for TerrainTextureArraySettings {
+    fn default() -> Self {
+        Self {
+            albedo_array: Handle::default(),
+            normal_array: None,
+            scale: Vec2::splat(1.0 / 12.0),
+            projection: TerrainTextureProjection::Uv,
+            normal_map_strength: 1.0,
+        }
+    }
+}
+
 #[derive(Reflect, Clone, Debug)]
 pub struct TerrainMaterialProfile {
     pub base_color: Color,
@@ -80,6 +115,7 @@ pub struct TerrainMaterialProfile {
     pub metallic: f32,
     pub double_sided: bool,
     pub layers: Vec<TerrainLayer>,
+    pub texture_arrays: Option<TerrainTextureArraySettings>,
 }
 
 impl Default for TerrainMaterialProfile {
@@ -93,6 +129,7 @@ impl Default for TerrainMaterialProfile {
                 "Terrain",
                 Color::srgb(0.62, 0.64, 0.66),
             )],
+            texture_arrays: None,
         }
     }
 }
@@ -106,6 +143,10 @@ impl TerrainMaterialProfile {
             double_sided: self.double_sided,
             ..default()
         }
+    }
+
+    pub fn uses_texture_arrays(&self) -> bool {
+        self.texture_arrays.is_some()
     }
 }
 

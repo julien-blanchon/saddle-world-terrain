@@ -146,6 +146,7 @@ pub struct TerrainColliderPatch {
     pub extent: Vec2,
     pub dimensions: UVec2,
     pub heights: Arc<[f32]>,
+    pub holes: Arc<[u8]>,
 }
 
 #[derive(Component, Clone, Debug, Deref)]

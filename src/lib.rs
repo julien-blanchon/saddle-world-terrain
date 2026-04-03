@@ -8,6 +8,7 @@ mod meshing;
 mod sampling;
 mod source;
 mod systems;
+mod textured_material;
 
 pub use chunking::{TerrainChunkAddress, TerrainChunkKey, terrain_chunk_for_local};
 pub use components::{
@@ -22,10 +23,12 @@ pub use config::{
 };
 pub use debug::{TerrainDebugColorMode, TerrainDebugConfig, TerrainDiagnostics};
 pub use material::{TerrainBlendRange, TerrainLayer, TerrainLayerBlend, TerrainMaterialProfile};
+pub use material::{TerrainTextureArraySettings, TerrainTextureProjection};
 pub use sampling::{
     TerrainSample, sample_height, sample_layer_weights, sample_normal, sample_terrain,
 };
-pub use source::{TerrainDataset, TerrainSource, TerrainWeightMap};
+pub use source::{TerrainDataset, TerrainHoleMask, TerrainSource, TerrainWeightMap};
+pub use textured_material::{TerrainTextureExtension, TerrainTextureMaterial};
 
 use bevy::{
     app::PostStartup,
@@ -112,6 +115,8 @@ impl Plugin for TerrainPlugin {
             .register_type::<material::TerrainBlendRange>()
             .register_type::<material::TerrainLayer>()
             .register_type::<material::TerrainMaterialProfile>()
+            .register_type::<material::TerrainTextureArraySettings>()
+            .register_type::<material::TerrainTextureProjection>()
             .add_systems(self.activate_schedule, systems::activate_runtime)
             .add_systems(self.deactivate_schedule, systems::deactivate_runtime)
             .configure_sets(
@@ -172,5 +177,7 @@ impl Plugin for TerrainPlugin {
                     .in_set(TerrainSystems::Debug)
                     .run_if(systems::runtime_is_active),
             );
+
+        textured_material::plugin(app);
     }
 }

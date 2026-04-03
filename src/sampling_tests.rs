@@ -1,6 +1,7 @@
 use super::*;
 use crate::{
-    TerrainBlendRange, TerrainConfig, TerrainDataset, TerrainLayer, TerrainMaterialProfile,
+    TerrainBlendRange, TerrainConfig, TerrainDataset, TerrainHoleMask, TerrainLayer,
+    TerrainMaterialProfile,
 };
 use bevy::color::Color;
 
@@ -82,4 +83,20 @@ fn sample_height_respects_root_translation() {
     let moved = sample_height(Vec3::new(4.0, 0.0, 4.0), &translated, &config, &source).unwrap();
 
     assert!((moved - (base + 15.0)).abs() < 0.0001);
+}
+
+#[test]
+fn sampling_returns_none_inside_holes() {
+    let source = TerrainDataset::from_heights(UVec2::new(2, 2), vec![0.5; 4])
+        .unwrap()
+        .with_hole_mask(TerrainHoleMask::from_values(UVec2::new(2, 2), vec![1.0; 4]).unwrap());
+    let config = TerrainConfig {
+        size: Vec2::new(8.0, 8.0),
+        ..default()
+    };
+    let transform = GlobalTransform::default();
+
+    assert!(sample_height(Vec3::new(4.0, 0.0, 4.0), &transform, &config, &source).is_none());
+    assert!(sample_normal(Vec3::new(4.0, 0.0, 4.0), &transform, &config, &source).is_none());
+    assert!(sample_terrain(Vec3::new(4.0, 0.0, 4.0), &transform, &config, &source).is_none());
 }

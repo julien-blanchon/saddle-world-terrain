@@ -1,5 +1,5 @@
 use super::*;
-use crate::{TerrainConfig, TerrainDataset, TerrainDebugColorMode};
+use crate::{TerrainConfig, TerrainDataset, TerrainDebugColorMode, TerrainHoleMask};
 use bevy::math::Vec2;
 
 fn dataset() -> TerrainDataset {
@@ -128,4 +128,46 @@ fn collider_patch_matches_requested_resolution() {
     let collider = artifact.collider_patch.unwrap();
     assert_eq!(collider.dimensions, UVec2::new(9, 9));
     assert_eq!(collider.origin, Vec2::ZERO);
+}
+
+#[test]
+fn hole_mask_removes_surface_triangles_and_marks_collider_samples() {
+    let source = TerrainDataset::from_heights(UVec2::new(2, 2), vec![0.5; 4])
+        .unwrap()
+        .with_hole_mask(TerrainHoleMask::from_values(UVec2::new(2, 2), vec![1.0; 4]).unwrap());
+    let config = TerrainConfig {
+        size: Vec2::new(8.0, 8.0),
+        chunk_size: Vec2::new(8.0, 8.0),
+        vertex_resolution: 2,
+        skirt_depth: 0.0,
+        collider: crate::TerrainColliderConfig {
+            enabled: true,
+            ..default()
+        },
+        ..default()
+    };
+
+    let artifact = build_chunk_artifact(
+        &source,
+        &config,
+        TerrainChunkKey {
+            coord: IVec2::ZERO,
+            lod: 0,
+        },
+        TerrainDebugColorMode::Natural,
+    )
+    .unwrap();
+
+    let index_count = artifact
+        .mesh
+        .indices()
+        .map(|indices| match indices {
+            Indices::U16(values) => values.len(),
+            Indices::U32(values) => values.len(),
+        })
+        .unwrap_or_default();
+    let collider = artifact.collider_patch.unwrap();
+
+    assert_eq!(index_count, 0);
+    assert!(collider.holes.iter().all(|value| *value == 1));
 }

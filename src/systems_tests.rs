@@ -3,8 +3,11 @@ use crate::{
     TerrainBundle, TerrainConfig, TerrainDataset, TerrainFocus, TerrainPlugin, TerrainProbe,
     TerrainProbeSample,
 };
+use bevy::asset::AssetPlugin;
 use bevy::gizmos::GizmoPlugin;
+use bevy::shader::Shader;
 use bevy::tasks::{AsyncComputeTaskPool, TaskPoolBuilder};
+use bevy::transform::TransformPlugin;
 use std::{thread, time::Duration};
 
 fn dataset() -> TerrainDataset {
@@ -15,10 +18,12 @@ fn test_app() -> App {
     AsyncComputeTaskPool::get_or_init(|| TaskPoolBuilder::default().build());
 
     let mut app = App::new();
-    app.add_plugins(bevy::asset::AssetPlugin::default());
+    app.add_plugins((MinimalPlugins, AssetPlugin::default(), TransformPlugin));
     app.add_plugins(GizmoPlugin);
-    app.insert_resource(Assets::<Mesh>::default());
-    app.insert_resource(Assets::<StandardMaterial>::default());
+    app.init_asset::<Mesh>();
+    app.init_asset::<Image>();
+    app.init_asset::<Shader>();
+    app.init_asset::<StandardMaterial>();
     app.add_plugins(TerrainPlugin::default());
     app
 }

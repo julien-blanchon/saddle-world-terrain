@@ -38,8 +38,10 @@ pub fn build_chunk_artifact(
     let mut positions = Vec::<[f32; 3]>::with_capacity((columns * rows) as usize);
     let mut normals = Vec::<[f32; 3]>::with_capacity((columns * rows) as usize);
     let mut uvs = Vec::<[f32; 2]>::with_capacity((columns * rows) as usize);
+    let mut uv1s = Vec::<[f32; 2]>::with_capacity((columns * rows) as usize);
     let mut colors = Vec::<[f32; 4]>::with_capacity((columns * rows) as usize);
     let mut indices = Vec::<u32>::new();
+    let mut holes = Vec::<bool>::with_capacity((columns * rows) as usize);
 
     let mut min = Vec3::splat(f32::INFINITY);
     let mut max = Vec3::splat(f32::NEG_INFINITY);
@@ -51,6 +53,7 @@ pub fn build_chunk_artifact(
             let chunk_local_xz = extent * Vec2::new(tx, tz);
             let sample_local_xz = sample_origin + chunk_local_xz;
             let uv = config.local_to_uv(sample_local_xz).unwrap_or(Vec2::ZERO);
+            let is_hole = source.sample_hole(uv) >= 0.5;
             let normalized_height = source.sample_height(uv);
             let height = config.height_offset + normalized_height * config.height_scale;
             let local = Vec3::new(chunk_local_xz.x, height, chunk_local_xz.y);
@@ -67,11 +70,16 @@ pub fn build_chunk_artifact(
             positions.push(local.to_array());
             normals.push(normal.to_array());
             uvs.push(uv.to_array());
+            uv1s.push([
+                dominant_texture_index(&layer_blend, config) as f32,
+                if is_hole { 1.0 } else { 0.0 },
+            ]);
             colors.push(
                 sample_color(&layer_blend, normalized_height, slope, key.lod, color_mode)
                     .to_linear()
                     .to_f32_array(),
             );
+            holes.push(is_hole);
             min = min.min(local);
             max = max.max(local);
         }
@@ -83,6 +91,10 @@ pub fn build_chunk_artifact(
             let i1 = i0 + 1;
             let i2 = i0 + columns;
             let i3 = i2 + 1;
+            if holes[i0 as usize] || holes[i1 as usize] || holes[i2 as usize] || holes[i3 as usize]
+            {
+                continue;
+            }
             indices.extend_from_slice(&[i0, i2, i1, i1, i2, i3]);
         }
     }
@@ -91,6 +103,7 @@ pub fn build_chunk_artifact(
         &mut positions,
         &mut normals,
         &mut uvs,
+        &mut uv1s,
         &mut colors,
         &mut indices,
         columns,
@@ -105,8 +118,12 @@ pub fn build_chunk_artifact(
     mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, positions);
     mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, normals);
     mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, uvs);
+    mesh.insert_attribute(Mesh::ATTRIBUTE_UV_1, uv1s);
     mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, colors);
     mesh.insert_indices(Indices::U32(indices));
+    if config.material.uses_texture_arrays() {
+        let _ = mesh.generate_tangents();
+    }
 
     Ok(TerrainBuildArtifact {
         mesh,
@@ -157,6 +174,7 @@ fn append_skirts(
     positions: &mut Vec<[f32; 3]>,
     normals: &mut Vec<[f32; 3]>,
     uvs: &mut Vec<[f32; 2]>,
+    uv1s: &mut Vec<[f32; 2]>,
     colors: &mut Vec<[f32; 4]>,
     indices: &mut Vec<u32>,
     columns: u32,
@@ -175,6 +193,7 @@ fn append_skirts(
             positions.push(position.to_array());
             normals.push(normals[index as usize]);
             uvs.push(uvs[index as usize]);
+            uv1s.push(uv1s[index as usize]);
             colors.push(colors[index as usize]);
         }
 
@@ -214,12 +233,15 @@ fn build_collider_patch(
     let columns = resolution + 1;
     let rows = resolution + 1;
     let mut heights = Vec::with_capacity((columns * rows) as usize);
+    let mut holes = Vec::with_capacity((columns * rows) as usize);
 
     for row in 0..rows {
         for column in 0..columns {
             let tx = column as f32 / resolution as f32;
             let tz = row as f32 / resolution as f32;
             let local = sample_origin + extent * Vec2::new(tx, tz);
+            let uv = config.local_to_uv(local).unwrap_or(Vec2::ZERO);
+            holes.push(u8::from(source.sample_hole(uv) >= 0.5));
             heights
                 .push(sample_height_local(local, config, source).unwrap_or(config.height_offset));
         }
@@ -230,7 +252,21 @@ fn build_collider_patch(
         extent,
         dimensions: UVec2::new(columns, rows),
         heights: Arc::from(heights),
+        holes: Arc::from(holes),
     }
+}
+
+fn dominant_texture_index(blend: &TerrainLayerBlend, config: &TerrainConfig) -> u32 {
+    blend
+        .dominant_layer
+        .and_then(|index| {
+            config
+                .material
+                .layers
+                .get(index)
+                .map(|layer| layer.texture_index.unwrap_or(index as u32))
+        })
+        .unwrap_or(0)
 }
 
 #[cfg(test)]

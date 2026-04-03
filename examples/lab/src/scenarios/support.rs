@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use bevy::prelude::*;
-use saddle_world_saddle_world_terrain::{TerrainChunk, TerrainColliderData};
+use saddle_world_terrain::{TerrainChunk, TerrainColliderData};
 
 pub fn entity_by_name(world: &mut World, name: &str) -> Option<Entity> {
     let mut query = world.query::<(Entity, &Name)>();

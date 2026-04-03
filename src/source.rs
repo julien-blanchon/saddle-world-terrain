@@ -7,6 +7,10 @@ pub trait TerrainSource: Send + Sync + 'static {
     fn sample_height(&self, uv: Vec2) -> f32;
     fn explicit_weight_channel_count(&self) -> usize;
     fn sample_explicit_weight(&self, channel: usize, uv: Vec2) -> f32;
+
+    fn sample_hole(&self, _uv: Vec2) -> f32 {
+        0.0
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -49,6 +53,38 @@ pub struct TerrainDataset {
     dimensions: UVec2,
     heights: Arc<[f32]>,
     weight_maps: Vec<TerrainWeightMap>,
+    hole_mask: Option<TerrainHoleMask>,
+}
+
+#[derive(Clone, Debug)]
+pub struct TerrainHoleMask {
+    pub dimensions: UVec2,
+    data: Arc<[f32]>,
+}
+
+impl TerrainHoleMask {
+    pub fn from_values(dimensions: UVec2, values: Vec<f32>) -> Result<Self, String> {
+        if dimensions.x == 0 || dimensions.y == 0 {
+            return Err("hole mask dimensions must be greater than zero".into());
+        }
+
+        let expected = dimensions.x as usize * dimensions.y as usize;
+        if expected != values.len() {
+            return Err(format!(
+                "hole mask expected {expected} texels but received {}",
+                values.len()
+            ));
+        }
+
+        Ok(Self {
+            dimensions,
+            data: Arc::from(values),
+        })
+    }
+
+    pub fn sample(&self, uv: Vec2) -> f32 {
+        sample_bilinear_scalar(self.dimensions, &self.data, uv)
+    }
 }
 
 impl TerrainDataset {
@@ -69,6 +105,7 @@ impl TerrainDataset {
             dimensions,
             heights: Arc::from(heights),
             weight_maps: Vec::new(),
+            hole_mask: None,
         })
     }
 
@@ -100,6 +137,11 @@ impl TerrainDataset {
 
     pub fn with_weight_map(mut self, map: TerrainWeightMap) -> Self {
         self.weight_maps.push(map);
+        self
+    }
+
+    pub fn with_hole_mask(mut self, hole_mask: TerrainHoleMask) -> Self {
+        self.hole_mask = Some(hole_mask);
         self
     }
 
@@ -176,6 +218,37 @@ impl TerrainDataset {
             )),
         }
     }
+
+    pub fn hole_mask_from_image(image: &Image) -> Result<TerrainHoleMask, String> {
+        let dimensions = UVec2::new(
+            image.texture_descriptor.size.width,
+            image.texture_descriptor.size.height,
+        );
+        let data = image
+            .data
+            .as_ref()
+            .ok_or_else(|| "hole image does not contain CPU-readable data".to_string())?;
+
+        let values = match image.texture_descriptor.format {
+            TextureFormat::R8Unorm => data.iter().map(|byte| *byte as f32 / 255.0).collect(),
+            TextureFormat::R16Unorm => data
+                .chunks_exact(2)
+                .map(|bytes| u16::from_le_bytes([bytes[0], bytes[1]]) as f32 / u16::MAX as f32)
+                .collect(),
+            TextureFormat::Rgba8Unorm | TextureFormat::Rgba8UnormSrgb => data
+                .chunks_exact(4)
+                .map(|texel| texel[3] as f32 / 255.0)
+                .collect(),
+            _ => {
+                return Err(format!(
+                    "unsupported hole image format {:?}; expected R8, R16, or RGBA8",
+                    image.texture_descriptor.format
+                ));
+            }
+        };
+
+        TerrainHoleMask::from_values(dimensions, values)
+    }
 }
 
 impl TerrainSource for TerrainDataset {
@@ -197,6 +270,13 @@ impl TerrainSource for TerrainDataset {
         self.weight_maps
             .get(map_index)
             .map(|map| map.sample_channel(channel_index, uv))
+            .unwrap_or(0.0)
+    }
+
+    fn sample_hole(&self, uv: Vec2) -> f32 {
+        self.hole_mask
+            .as_ref()
+            .map(|mask| mask.sample(uv))
             .unwrap_or(0.0)
     }
 }

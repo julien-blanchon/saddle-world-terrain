@@ -29,6 +29,9 @@ pub fn sample_terrain(
         .transform_point3(world_position);
     let local_xz = Vec2::new(local.x, local.z);
     let uv = config.local_to_uv(local_xz)?;
+    if source.sample_hole(uv) >= 0.5 {
+        return None;
+    }
 
     let normalized_height = source.sample_height(uv);
     let local_height = config.height_offset + normalized_height * config.height_scale;
@@ -93,6 +96,9 @@ pub(crate) fn sample_height_local(
     source: &dyn TerrainSource,
 ) -> Option<f32> {
     let uv = config.local_to_uv(local_xz)?;
+    if source.sample_hole(uv) >= 0.5 {
+        return None;
+    }
     Some(config.height_offset + source.sample_height(uv) * config.height_scale)
 }
 

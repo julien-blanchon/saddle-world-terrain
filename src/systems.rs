@@ -12,7 +12,7 @@ use crate::{
     TerrainChunk, TerrainChunkBounds, TerrainChunkReady, TerrainChunkRemoved, TerrainChunkState,
     TerrainColliderData, TerrainColliderPatch, TerrainColliderReady, TerrainDebugColorMode,
     TerrainDiagnostics, TerrainFocus, TerrainFocusPoints, TerrainProbe, TerrainProbeSample,
-    TerrainRoot, TerrainRootStats, TerrainSourceHandle,
+    TerrainRoot, TerrainRootStats, TerrainSourceHandle, TerrainTextureMaterial,
     chunking::{TerrainChunkKey, chunk_center_local, chunk_coords_in_radius, chunk_origin_local},
     config::TerrainConfig,
     debug::TerrainDebugConfig,
@@ -30,8 +30,14 @@ pub(crate) struct TerrainRuntimeState {
 #[derive(Component, Default)]
 pub(crate) struct TerrainRootRuntime {
     pub revision: u64,
-    pub material: Option<Handle<StandardMaterial>>,
+    pub material: Option<TerrainRootMaterialHandle>,
     pub mesh_color_mode: TerrainDebugColorMode,
+}
+
+#[derive(Clone)]
+pub(crate) enum TerrainRootMaterialHandle {
+    Standard(Handle<StandardMaterial>),
+    Textured(Handle<TerrainTextureMaterial>),
 }
 
 #[derive(Component, Default)]
@@ -101,6 +107,7 @@ pub(crate) fn sync_root_materials(
     mut commands: Commands,
     debug: Res<TerrainDebugConfig>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    mut textured_materials: ResMut<Assets<TerrainTextureMaterial>>,
     mut roots: Query<
         (
             Entity,
@@ -127,7 +134,12 @@ pub(crate) fn sync_root_materials(
         let Some(mut runtime) = runtime else {
             commands.entity(entity).insert(TerrainRootRuntime {
                 revision: 1,
-                material: Some(materials.add(config.material.standard_material())),
+                material: Some(build_root_material(
+                    &config,
+                    mesh_color_mode,
+                    &mut materials,
+                    &mut textured_materials,
+                )),
                 mesh_color_mode,
             });
             changed_roots.insert(entity);
@@ -142,7 +154,12 @@ pub(crate) fn sync_root_materials(
         if changed {
             runtime.revision = runtime.revision.wrapping_add(1);
             runtime.mesh_color_mode = mesh_color_mode;
-            runtime.material = Some(materials.add(config.material.standard_material()));
+            runtime.material = Some(build_root_material(
+                &config,
+                mesh_color_mode,
+                &mut materials,
+                &mut textured_materials,
+            ));
             changed_roots.insert(entity);
         }
     }
@@ -376,11 +393,7 @@ pub(crate) fn queue_chunk_builds(
                 runtime.collider_patch = entry.collider_patch.clone();
                 runtime.cache_hits = runtime.cache_hits.wrapping_add(1);
             }
-            commands.entity(entity).insert((
-                Mesh3d(entry.mesh.clone()),
-                MeshMaterial3d(material),
-                entry.bounds,
-            ));
+            insert_chunk_material(&mut commands, entity, material, entry.mesh.clone(), entry.bounds);
             ready_writer.write(TerrainChunkReady {
                 terrain: chunk.terrain,
                 chunk: entity,
@@ -460,11 +473,7 @@ pub(crate) fn poll_chunk_builds(
 
                 runtime.collider_patch = artifact.collider_patch;
                 *state = TerrainChunkState::Ready;
-                commands.entity(entity).insert((
-                    Mesh3d(mesh),
-                    MeshMaterial3d(material),
-                    artifact.bounds,
-                ));
+                insert_chunk_material(&mut commands, entity, material, mesh, artifact.bounds);
                 ready_writer.write(TerrainChunkReady {
                     terrain: chunk.terrain,
                     chunk: entity,
@@ -475,6 +484,44 @@ pub(crate) fn poll_chunk_builds(
             Err(_) => {
                 *state = TerrainChunkState::Failed;
             }
+        }
+    }
+}
+
+fn build_root_material(
+    config: &TerrainConfig,
+    color_mode: TerrainDebugColorMode,
+    standard_materials: &mut Assets<StandardMaterial>,
+    textured_materials: &mut Assets<TerrainTextureMaterial>,
+) -> TerrainRootMaterialHandle {
+    if color_mode == TerrainDebugColorMode::Natural {
+        if let Some(material) = crate::textured_material::build_textured_material(&config.material) {
+            return TerrainRootMaterialHandle::Textured(textured_materials.add(material));
+        }
+    }
+
+    TerrainRootMaterialHandle::Standard(
+        standard_materials.add(config.material.standard_material()),
+    )
+}
+
+fn insert_chunk_material(
+    commands: &mut Commands,
+    entity: Entity,
+    material: TerrainRootMaterialHandle,
+    mesh: Handle<Mesh>,
+    bounds: TerrainChunkBounds,
+) {
+    let mut entity_commands = commands.entity(entity);
+    entity_commands.insert((Mesh3d(mesh), bounds));
+    match material {
+        TerrainRootMaterialHandle::Standard(handle) => {
+            entity_commands.remove::<MeshMaterial3d<TerrainTextureMaterial>>();
+            entity_commands.insert(MeshMaterial3d(handle));
+        }
+        TerrainRootMaterialHandle::Textured(handle) => {
+            entity_commands.remove::<MeshMaterial3d<StandardMaterial>>();
+            entity_commands.insert(MeshMaterial3d(handle));
         }
     }
 }
