@@ -79,7 +79,11 @@ impl AsBindGroupShaderType<TerrainTextureGpuUniform> for TerrainTextureExtension
                     TerrainTextureProjection::Uv => 0.0,
                     TerrainTextureProjection::Triplanar => 1.0,
                 },
-                if self.normal_array.is_some() { 1.0 } else { 0.0 },
+                if self.normal_array.is_some() {
+                    1.0
+                } else {
+                    0.0
+                },
                 self.layer_count as f32,
                 self.normal_map_strength,
             ),

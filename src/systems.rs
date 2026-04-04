@@ -393,7 +393,13 @@ pub(crate) fn queue_chunk_builds(
                 runtime.collider_patch = entry.collider_patch.clone();
                 runtime.cache_hits = runtime.cache_hits.wrapping_add(1);
             }
-            insert_chunk_material(&mut commands, entity, material, entry.mesh.clone(), entry.bounds);
+            insert_chunk_material(
+                &mut commands,
+                entity,
+                material,
+                entry.mesh.clone(),
+                entry.bounds,
+            );
             ready_writer.write(TerrainChunkReady {
                 terrain: chunk.terrain,
                 chunk: entity,
@@ -495,14 +501,13 @@ fn build_root_material(
     textured_materials: &mut Assets<TerrainTextureMaterial>,
 ) -> TerrainRootMaterialHandle {
     if color_mode == TerrainDebugColorMode::Natural {
-        if let Some(material) = crate::textured_material::build_textured_material(&config.material) {
+        if let Some(material) = crate::textured_material::build_textured_material(&config.material)
+        {
             return TerrainRootMaterialHandle::Textured(textured_materials.add(material));
         }
     }
 
-    TerrainRootMaterialHandle::Standard(
-        standard_materials.add(config.material.standard_material()),
-    )
+    TerrainRootMaterialHandle::Standard(standard_materials.add(config.material.standard_material()))
 }
 
 fn insert_chunk_material(
