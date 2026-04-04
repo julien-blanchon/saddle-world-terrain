@@ -4,6 +4,7 @@ members = [
     "basic",
     "clipmap_debug",
     "splat_layers",
+    "open_world_showcase",
     "async_streaming",
     "physics_colliders",
     "lab",

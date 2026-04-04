@@ -111,10 +111,17 @@ This keeps the public API renderer-neutral while still giving a practical v1 sha
 | `basic` | Minimal terrain root plus one animated focus | `cargo run -p saddle-world-terrain-example-basic` |
 | `clipmap_debug` | LOD color mode, chunk bounds, focus radii | `cargo run -p saddle-world-terrain-example-clipmap-debug` |
 | `splat_layers` | Dominant-layer debug coloring from weight, height, and slope blending | `cargo run -p saddle-world-terrain-example-splat-layers` |
+| `open_world_showcase` | P0 integration demo combining terrain streaming with procedural noise, sky, wind, foliage, and grass in one art-directed valley scene | `cargo run -p saddle-world-terrain-example-open-world-showcase` |
 | `async_streaming` | Tight build budget, continuous focus movement, and a secondary explicit focus point | `cargo run -p saddle-world-terrain-example-async-streaming` |
 | `physics_colliders` | Backend-agnostic collider payload generation and collider debug bounds | `cargo run -p saddle-world-terrain-example-physics-colliders` |
 
 The richer standalone validation app lives in [`examples/lab`](examples/lab/README.md).
+
+Smoke-check the open-world integration showcase with:
+
+```bash
+cargo run -p saddle-world-terrain-example-open-world-showcase --features e2e -- open_world_showcase_smoke
+```
 
 ## Limitations And Non-Goals
 
