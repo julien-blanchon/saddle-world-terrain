@@ -1,22 +1,9 @@
 use bevy::prelude::*;
 use saddle_world_terrain::{
-    TerrainBlendRange, TerrainBundle, TerrainConfig, TerrainDataset, TerrainDebugColorMode,
-    TerrainDebugConfig, TerrainFocus, TerrainLayer, TerrainMaterialProfile, TerrainPlugin,
+    TerrainBlendRange, TerrainConfig, TerrainDataset, TerrainLayer, TerrainMaterialProfile,
 };
 
-#[derive(Component)]
-pub struct ExampleFocus;
-
-#[derive(Component)]
-pub struct ExampleCamera;
-
-#[derive(Component)]
-pub struct FocusMotion {
-    pub center: Vec2,
-    pub radius: Vec2,
-    pub speed: f32,
-}
-
+/// Generate a procedural heightmap dataset with weight-painted regions.
 pub fn generated_dataset(dimensions: UVec2) -> TerrainDataset {
     let base = TerrainDataset::from_fn(dimensions, |_coord, uv| {
         let ridge = ((uv.x * std::f32::consts::TAU * 1.7).sin() * 0.35
@@ -49,6 +36,8 @@ pub fn generated_dataset(dimensions: UVec2) -> TerrainDataset {
     )
 }
 
+/// A richly configured terrain for examples: 640x640 world units, 5 material
+/// layers (water, meadow, dirt, rock, snow) with height and slope blending.
 pub fn default_config() -> TerrainConfig {
     TerrainConfig {
         size: Vec2::new(640.0, 640.0),
@@ -90,97 +79,4 @@ pub fn default_config() -> TerrainConfig {
         },
         ..default()
     }
-}
-
-pub fn configure_app(app: &mut App, title: &str) {
-    app.insert_resource(ClearColor(Color::srgb(0.80, 0.88, 0.95)));
-    app.add_plugins(DefaultPlugins.set(WindowPlugin {
-        primary_window: Some(Window {
-            title: title.into(),
-            resolution: (1440, 900).into(),
-            ..default()
-        }),
-        ..default()
-    }));
-    app.add_plugins(TerrainPlugin::default());
-}
-
-pub fn spawn_scene(commands: &mut Commands, terrain_entity: Entity) {
-    commands.spawn((
-        Name::new("Terrain Focus"),
-        ExampleFocus,
-        TerrainFocus {
-            terrain: Some(terrain_entity),
-            ..default()
-        },
-        FocusMotion {
-            center: Vec2::new(320.0, 320.0),
-            radius: Vec2::new(210.0, 180.0),
-            speed: 0.18,
-        },
-        Transform::from_xyz(320.0, 0.0, 320.0),
-        GlobalTransform::default(),
-    ));
-
-    commands.spawn((
-        Name::new("Example Camera"),
-        ExampleCamera,
-        Camera3d::default(),
-        Transform::from_xyz(180.0, 140.0, 220.0).looking_at(Vec3::new(320.0, 20.0, 320.0), Vec3::Y),
-    ));
-
-    commands.spawn((
-        DirectionalLight {
-            illuminance: light_consts::lux::FULL_DAYLIGHT,
-            shadows_enabled: true,
-            ..default()
-        },
-        Transform::from_rotation(Quat::from_euler(EulerRot::XYZ, -0.7, 0.45, 0.0)),
-    ));
-
-    commands.insert_resource(GlobalAmbientLight {
-        color: Color::WHITE,
-        brightness: 200.0,
-        affects_lightmapped_meshes: true,
-    });
-}
-
-pub fn animate_focus(
-    time: Res<Time>,
-    mut focus: Query<(&FocusMotion, &mut Transform), With<ExampleFocus>>,
-) {
-    for (motion, mut transform) in &mut focus {
-        let t = time.elapsed_secs() * motion.speed;
-        transform.translation.x = motion.center.x + motion.radius.x * t.cos();
-        transform.translation.z = motion.center.y + motion.radius.y * (t * 0.7).sin();
-    }
-}
-
-pub fn follow_focus(
-    focus: Query<&Transform, With<ExampleFocus>>,
-    mut camera: Query<&mut Transform, (With<ExampleCamera>, Without<ExampleFocus>)>,
-) {
-    let Ok(focus) = focus.single() else {
-        return;
-    };
-    let Ok(mut camera) = camera.single_mut() else {
-        return;
-    };
-    let target = focus.translation + Vec3::new(0.0, 28.0, 0.0);
-    camera.look_at(target, Vec3::Y);
-}
-
-pub fn spawn_terrain(commands: &mut Commands, config: TerrainConfig) -> Entity {
-    commands
-        .spawn(TerrainBundle::new(
-            generated_dataset(UVec2::new(257, 257)),
-            config,
-        ))
-        .id()
-}
-
-pub fn enable_debug(debug: &mut TerrainDebugConfig, mode: TerrainDebugColorMode) {
-    debug.show_chunk_bounds = true;
-    debug.show_focus_rings = true;
-    debug.color_mode = mode;
 }
