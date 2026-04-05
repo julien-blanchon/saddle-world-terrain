@@ -7,6 +7,9 @@ members = [
     "open_world_showcase",
     "async_streaming",
     "physics_colliders",
+    "island",
+    "mountain_range",
+    "terrain_sculpting",
     "lab",
 ]
 resolver = "3"

@@ -644,7 +644,7 @@ pub(crate) fn update_diagnostics(
         ),
         With<TerrainChunk>,
     >,
-    mut roots: Query<(Entity, &mut TerrainRootStats), With<TerrainRoot>>,
+    mut roots: Query<(Entity, &TerrainConfig, &mut TerrainRootStats), With<TerrainRoot>>,
     mut diagnostics: ResMut<TerrainDiagnostics>,
 ) {
     let mut by_root = HashMap::<Entity, (u32, u32, u64)>::new();
@@ -671,17 +671,38 @@ pub(crate) fn update_diagnostics(
     diagnostics.cache_entries = cache.entries.len() as u32;
     diagnostics.focus_points = focus_points.0.len() as u32 + focuses.iter().count() as u32;
 
+    let root_configs: HashMap<Entity, &TerrainConfig> = roots
+        .iter()
+        .map(|(entity, config, _)| (entity, config))
+        .collect();
+
+    let mut total_vertices = 0_u64;
+    let mut total_triangles = 0_u64;
+
     for (chunk, state, runtime, _) in &chunks {
         let entry = by_root.entry(chunk.terrain).or_insert((0, 0, 0));
         match state {
             TerrainChunkState::Queued | TerrainChunkState::Building => entry.0 += 1,
-            TerrainChunkState::Ready => entry.1 += 1,
+            TerrainChunkState::Ready => {
+                entry.1 += 1;
+                if let Some(config) = root_configs.get(&chunk.terrain) {
+                    let resolution =
+                        crate::meshing::resolution_for_lod(config, chunk.key.lod);
+                    let verts = (resolution + 1) as u64 * (resolution + 1) as u64;
+                    let tris = resolution as u64 * resolution as u64 * 2;
+                    total_vertices += verts;
+                    total_triangles += tris;
+                }
+            }
             TerrainChunkState::Failed => {}
         }
         entry.2 = entry.2.saturating_add(runtime.cache_hits);
     }
 
-    for (entity, mut stats) in &mut roots {
+    diagnostics.estimated_vertex_count = total_vertices;
+    diagnostics.estimated_triangle_count = total_triangles;
+
+    for (entity, _, mut stats) in &mut roots {
         let (pending, ready, cache_hits) = by_root.get(&entity).copied().unwrap_or((0, 0, 0));
         stats.pending_chunks = pending;
         stats.ready_chunks = ready;

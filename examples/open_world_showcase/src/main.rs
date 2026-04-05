@@ -29,8 +29,8 @@ use saddle_world_wind::{
 const TERRAIN_DIMENSIONS: UVec2 = UVec2::new(257, 257);
 const TERRAIN_SIZE: Vec2 = Vec2::new(640.0, 640.0);
 const PATCH_CENTER: Vec2 = Vec2::new(320.0, 312.0);
-const PATCH_SIZE: Vec2 = Vec2::new(260.0, 220.0);
-const PATCH_RESOLUTION: UVec2 = UVec2::new(96, 82);
+const PATCH_SIZE: Vec2 = Vec2::new(220.0, 180.0);
+const PATCH_RESOLUTION: UVec2 = UVec2::new(64, 52);
 const PATCH_ELEVATION_BIAS: f32 = 0.08;
 
 #[derive(Component)]
@@ -85,8 +85,8 @@ impl Default for OpenWorldPane {
             cloud_coverage: 0.34,
             wind_speed: 6.4,
             wind_intensity: 0.92,
-            grass_density: 24.0,
-            canopy_density: 0.045,
+            grass_density: 16.0,
+            canopy_density: 0.035,
             grass_sway_scale: 1.35,
             visible_grass_blades: 0,
             foliage_instances: 0,
@@ -205,9 +205,9 @@ fn setup(
         },
     ));
 
-    let tree_mesh = meshes.add(Cone::new(3.4, 9.0).mesh().resolution(10));
-    let shrub_mesh = meshes.add(Sphere::new(1.2).mesh().uv(12, 10));
-    let rock_mesh = meshes.add(Sphere::new(1.6).mesh().uv(16, 12));
+    let tree_mesh = meshes.add(Cone::new(3.4, 9.0).mesh().resolution(8));
+    let shrub_mesh = meshes.add(Sphere::new(1.2).mesh().uv(8, 6));
+    let rock_mesh = meshes.add(Sphere::new(1.6).mesh().uv(10, 8));
 
     let foliage_surface_entity = commands
         .spawn((
@@ -229,20 +229,20 @@ fn setup(
             FoliageLayer {
                 order: 1,
                 density_per_square_unit: pane.canopy_density,
-                min_spacing: 3.8,
-                occupancy_radius: 1.8,
-                max_instances_per_chunk: 96,
-                sample_budget_per_chunk: 280,
+                min_spacing: 4.2,
+                occupancy_radius: 2.0,
+                max_instances_per_chunk: 64,
+                sample_budget_per_chunk: 200,
                 lods: vec![
                     FoliageLod {
-                        max_distance: 48.0,
+                        max_distance: 40.0,
                         density_scale: 1.0,
                         prototype_lod: 0,
                         fade_distance: 4.0,
                     },
                     FoliageLod {
-                        max_distance: 90.0,
-                        density_scale: 0.55,
+                        max_distance: 72.0,
+                        density_scale: 0.45,
                         prototype_lod: 0,
                         fade_distance: 6.0,
                     },
@@ -260,13 +260,13 @@ fn setup(
             Name::new("Boulders"),
             FoliageLayer {
                 order: 0,
-                density_per_square_unit: 0.012,
-                min_spacing: 8.0,
+                density_per_square_unit: 0.010,
+                min_spacing: 9.0,
                 occupancy_radius: 3.0,
-                max_instances_per_chunk: 20,
-                sample_budget_per_chunk: 64,
+                max_instances_per_chunk: 16,
+                sample_budget_per_chunk: 48,
                 lods: vec![FoliageLod {
-                    max_distance: 100.0,
+                    max_distance: 80.0,
                     density_scale: 1.0,
                     prototype_lod: 0,
                     fade_distance: 8.0,
@@ -509,15 +509,22 @@ fn build_dataset() -> TerrainDataset {
 fn terrain_config(height_scale: f32, height_offset: f32) -> TerrainConfig {
     TerrainConfig {
         size: TERRAIN_SIZE,
-        chunk_size: Vec2::new(40.0, 40.0),
-        vertex_resolution: 64,
+        chunk_size: Vec2::new(48.0, 48.0),
+        vertex_resolution: 48,
         height_scale,
         height_offset,
         skirt_depth: 10.0,
+        lod: saddle_world_terrain::TerrainLodConfig {
+            lod_count: 5,
+            near_distance: 36.0,
+            distance_multiplier: 2.0,
+            hysteresis: 10.0,
+            minimum_vertex_resolution: 8,
+        },
         streaming: saddle_world_terrain::TerrainStreamingConfig {
-            visual_radius: 210.0,
-            collider_radius: 120.0,
-            max_builds_per_frame: 8,
+            visual_radius: 180.0,
+            collider_radius: 90.0,
+            max_builds_per_frame: 6,
         },
         material: TerrainMaterialProfile {
             layers: vec![

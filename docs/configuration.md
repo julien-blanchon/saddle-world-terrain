@@ -79,9 +79,42 @@
 | `show_sample_probes` | `bool` | `false` | Draw probe hit points and normals |
 | `color_mode` | `TerrainDebugColorMode` | `Natural` | Chooses natural shading, mesh debug colors, or chunk-state bound colors |
 
+## `TerrainDiagnostics`
+
+| Field | Type | Default | Effect |
+| --- | --- | --- | --- |
+| `active_roots` | `u32` | `0` | Number of active terrain root entities |
+| `total_chunks` | `u32` | `0` | Total spawned chunk entities |
+| `pending_chunks` | `u32` | `0` | Chunks queued or building |
+| `ready_chunks` | `u32` | `0` | Chunks with meshes attached |
+| `collider_chunks` | `u32` | `0` | Chunks with collider payloads |
+| `cache_entries` | `u32` | `0` | Cached chunk build artifacts |
+| `focus_points` | `u32` | `0` | Active focus entities plus explicit focus points |
+| `estimated_vertex_count` | `u64` | `0` | Estimated total vertices across all ready chunks |
+| `estimated_triangle_count` | `u64` | `0` | Estimated total triangles across all ready chunks |
+
+## Helper Methods on `TerrainConfig`
+
+| Method | Returns | Description |
+| --- | --- | --- |
+| `total_chunk_count()` | `u32` | Total chunks that would cover the full terrain |
+| `chunk_vertex_count(lod)` | `u32` | Estimated vertex count for a single chunk at the given LOD |
+| `chunk_dimensions()` | `UVec2` | Grid dimensions in chunk units |
+| `with_size(size)` | `Self` | Builder: set terrain size |
+| `with_chunk_size(size)` | `Self` | Builder: set chunk size |
+| `with_vertex_resolution(res)` | `Self` | Builder: set vertex resolution |
+| `with_height_scale(scale)` | `Self` | Builder: set height scale |
+| `with_height_offset(offset)` | `Self` | Builder: set height offset |
+| `with_lod(config)` | `Self` | Builder: set LOD configuration |
+| `with_streaming(config)` | `Self` | Builder: set streaming configuration |
+| `with_collider(config)` | `Self` | Builder: set collider configuration |
+| `with_material(profile)` | `Self` | Builder: set material profile |
+
 ## Valid Ranges And Guidance
 
 - `vertex_resolution` should be at least `8` if skirts are enabled and at least `4` for collider payloads.
 - `distance_multiplier` should stay above `1.0`; powers of two work best.
 - `collider_radius` is usually best at `25%` to `60%` of `visual_radius`.
 - `normal_sample_distance` should roughly match the spatial scale of the terrain texels after `size` is applied.
+- For large open worlds, prefer `vertex_resolution` of 48 over 64 — the visual difference is minimal but vertex count drops by ~44%.
+- Monitor `TerrainDiagnostics::estimated_vertex_count` at runtime to detect geometry budgets spiraling out of control.

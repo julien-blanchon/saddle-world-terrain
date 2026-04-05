@@ -135,6 +135,41 @@ impl TerrainDataset {
         Self::from_heights(dimensions, heights)
     }
 
+    /// Generate a dataset from a function that returns both height and RGBA weights.
+    ///
+    /// This is a convenience for `from_fn` + `with_weight_map` in a single pass.
+    pub fn from_fn_with_weights(
+        dimensions: UVec2,
+        mut generator: impl FnMut(UVec2, Vec2) -> (f32, [f32; 4]),
+    ) -> Result<Self, String> {
+        let count = dimensions.x as usize * dimensions.y as usize;
+        let mut heights = Vec::with_capacity(count);
+        let mut weights = Vec::with_capacity(count);
+        for y in 0..dimensions.y {
+            for x in 0..dimensions.x {
+                let uv = Vec2::new(
+                    if dimensions.x <= 1 {
+                        0.0
+                    } else {
+                        x as f32 / (dimensions.x - 1) as f32
+                    },
+                    if dimensions.y <= 1 {
+                        0.0
+                    } else {
+                        y as f32 / (dimensions.y - 1) as f32
+                    },
+                );
+                let (height, weight) = generator(UVec2::new(x, y), uv);
+                heights.push(height);
+                weights.push(weight);
+            }
+        }
+
+        let dataset = Self::from_heights(dimensions, heights)?;
+        let weight_map = TerrainWeightMap::from_rgba(dimensions, weights)?;
+        Ok(dataset.with_weight_map(weight_map))
+    }
+
     pub fn with_weight_map(mut self, map: TerrainWeightMap) -> Self {
         self.weight_maps.push(map);
         self

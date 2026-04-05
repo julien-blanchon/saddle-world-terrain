@@ -104,6 +104,45 @@ This keeps the public API renderer-neutral while still giving a practical v1 sha
 
 `TerrainColliderPatch` is chunk-local data. Its `origin` starts at zero for the owning chunk entity, while the owning `TerrainChunk` key and transform define where that patch lives in the full terrain.
 
+## Runtime Terrain Modification
+
+Terrain can be modified at runtime by replacing the `TerrainSourceHandle` on the terrain entity. The terrain system detects the source change and rebuilds affected chunks automatically. See the `terrain_sculpting` example for a complete brush-based sculpting demo using a custom `TerrainSource` backed by a shared mutable height buffer.
+
+## Builder API
+
+`TerrainConfig` supports builder-style construction:
+
+```rust
+let config = TerrainConfig::default()
+    .with_size(Vec2::new(800.0, 800.0))
+    .with_height_scale(120.0)
+    .with_vertex_resolution(48)
+    .with_streaming(TerrainStreamingConfig {
+        visual_radius: 200.0,
+        ..default()
+    });
+```
+
+`TerrainDataset::from_fn_with_weights` generates heights and RGBA weight data in a single pass:
+
+```rust
+let dataset = TerrainDataset::from_fn_with_weights(UVec2::new(257, 257), |_coord, uv| {
+    let height = (uv.x * std::f32::consts::TAU).sin() * 0.25 + 0.5;
+    let grass = (1.0 - (height - 0.4).abs() * 3.0).clamp(0.0, 1.0);
+    (height, [0.0, grass, 0.0, 0.0])
+}).unwrap();
+```
+
+## Diagnostics
+
+`TerrainDiagnostics` (a `Resource`) exposes runtime metrics:
+
+- `total_chunks`, `ready_chunks`, `pending_chunks`, `collider_chunks`
+- `estimated_vertex_count`, `estimated_triangle_count` — aggregate geometry load
+- `cache_entries`, `focus_points`
+
+Use `TerrainConfig::chunk_vertex_count(lod)` and `TerrainConfig::total_chunk_count()` at setup time to estimate geometry budgets.
+
 ## Examples
 
 | Example | What it shows | Run |
@@ -111,9 +150,12 @@ This keeps the public API renderer-neutral while still giving a practical v1 sha
 | `basic` | Minimal terrain root plus one animated focus | `cargo run -p saddle-world-terrain-example-basic` |
 | `clipmap_debug` | LOD color mode, chunk bounds, focus radii | `cargo run -p saddle-world-terrain-example-clipmap-debug` |
 | `splat_layers` | Dominant-layer debug coloring from weight, height, and slope blending | `cargo run -p saddle-world-terrain-example-splat-layers` |
-| `open_world_showcase` | P0 integration demo combining terrain streaming with procedural noise, sky, wind, foliage, and grass in one art-directed valley scene | `cargo run -p saddle-world-terrain-example-open-world-showcase` |
+| `open_world_showcase` | Performance-optimized integration demo combining terrain streaming with procedural noise, sky, wind, foliage, and grass in one art-directed valley scene | `cargo run -p saddle-world-terrain-example-open-world-showcase` |
 | `async_streaming` | Tight build budget, continuous focus movement, and a secondary explicit focus point | `cargo run -p saddle-world-terrain-example-async-streaming` |
 | `physics_colliders` | Backend-agnostic collider payload generation and collider debug bounds | `cargo run -p saddle-world-terrain-example-physics-colliders` |
+| `island` | Island-shaped terrain with radial falloff, water plane, and five material layers | `cargo run -p saddle-world-terrain-example-island` |
+| `mountain_range` | High-elevation terrain with dramatic peaks, slope-based rock, and snow | `cargo run -p saddle-world-terrain-example-mountain-range` |
+| `terrain_sculpting` | Runtime terrain modification with brush-based raising and lowering | `cargo run -p saddle-world-terrain-example-terrain-sculpting` |
 
 The richer standalone validation app lives in [`examples/lab`](examples/lab/README.md).
 
@@ -123,10 +165,20 @@ Smoke-check the open-world integration showcase with:
 cargo run -p saddle-world-terrain-example-open-world-showcase --features e2e -- open_world_showcase_smoke
 ```
 
+## Performance Tuning
+
+For the best frame rate on large terrains:
+
+- **Reduce `vertex_resolution`** — 48 is a good balance for most scenes (default is 64)
+- **Increase `chunk_size`** — larger chunks reduce draw calls but increase per-chunk rebuild time
+- **Tune `lod.near_distance`** — push lower LODs sooner to reduce far-field vertex count
+- **Lower `streaming.visual_radius`** — only load chunks the player can see
+- **Set `streaming.max_builds_per_frame`** — cap async rebuilds to avoid spikes (2–8 typical)
+- **Use `TerrainDiagnostics`** — monitor `estimated_vertex_count` and `estimated_triangle_count` at runtime
+
 ## Limitations And Non-Goals
 
 - v1 keeps chunk world size fixed and lowers far-field vertex density instead of shipping a full clipmap mesh reuse path.
 - Crack prevention currently relies on shared sampling plus skirts, not geomorphing.
 - Collider generation is backend-agnostic payload data, not a built-in physics integration.
 - Debug chunk state is exposed through gizmo colors, named entities, and BRP-friendly diagnostics; the crate does not ship a font-dependent in-world text system.
-- Runtime terrain editing and hole masks are intentionally deferred; see [`docs/architecture.md`](docs/architecture.md).

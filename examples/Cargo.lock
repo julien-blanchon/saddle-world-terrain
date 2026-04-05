@@ -5050,6 +5050,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "saddle-world-terrain-example-island"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "saddle-camera-orbit-camera",
+ "saddle-world-terrain",
+]
+
+[[package]]
+name = "saddle-world-terrain-example-mountain-range"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "saddle-camera-orbit-camera",
+ "saddle-world-terrain",
+]
+
+[[package]]
 name = "saddle-world-terrain-example-open-world-showcase"
 version = "0.1.0"
 dependencies = [
@@ -5084,6 +5102,15 @@ dependencies = [
  "bevy",
  "saddle-world-terrain",
  "saddle-world-terrain-example-common",
+]
+
+[[package]]
+name = "saddle-world-terrain-example-terrain-sculpting"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "saddle-camera-orbit-camera",
+ "saddle-world-terrain",
 ]
 
 [[package]]

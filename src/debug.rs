@@ -48,6 +48,10 @@ pub struct TerrainDiagnostics {
     pub collider_chunks: u32,
     pub cache_entries: u32,
     pub focus_points: u32,
+    /// Estimated total vertex count across all ready terrain chunks.
+    pub estimated_vertex_count: u64,
+    /// Estimated total triangle count across all ready terrain chunks.
+    pub estimated_triangle_count: u64,
 }
 
 pub(crate) fn draw_debug_gizmos(

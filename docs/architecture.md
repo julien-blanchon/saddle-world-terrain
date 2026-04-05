@@ -134,13 +134,17 @@ The API is shaped so the runtime can grow without breaking the consumer-facing c
 - `TerrainChunkReady` and `TerrainColliderReady` stay valid if the renderer moves to clipmap rings
 - debug color modes and sampling helpers are defined on terrain truth, not on one mesh topology
 
-Documented deferrals:
+## Runtime Terrain Editing
+
+Runtime terrain modification is supported through the `TerrainSource` trait. Games implement a custom source backed by a mutable height buffer and replace the `TerrainSourceHandle` on the terrain entity when heights change. The terrain system detects the source swap and rebuilds affected chunks automatically.
+
+The `terrain_sculpting` example demonstrates this pattern with a shared `Arc<Mutex<Vec<f32>>>` height buffer that a brush system writes to while the terrain plugin reads from it.
+
+## Documented Deferrals
 
 - full geometry clipmap mesh reuse
 - geomorphing
-- hole masks
 - source-asset hot reload beyond replacing the terrain bundle's source handle
-- runtime editing and brush tools
 - floating-origin helpers beyond transform-relative sampling
 
 Those are deferred because the shared crate needs a reliable terrain truth model first.

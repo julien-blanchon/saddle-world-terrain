@@ -139,4 +139,61 @@ impl TerrainConfig {
     pub fn uv_to_local(&self, uv: Vec2) -> Vec2 {
         Vec2::new(uv.x * self.size.x, uv.y * self.size.y)
     }
+
+    /// Returns the total number of chunks that would cover this terrain.
+    pub fn total_chunk_count(&self) -> u32 {
+        let dims = self.chunk_dimensions();
+        dims.x * dims.y
+    }
+
+    /// Estimates the vertex count for a single chunk at the given LOD level.
+    pub fn chunk_vertex_count(&self, lod: u8) -> u32 {
+        let resolution = crate::meshing::resolution_for_lod(self, lod);
+        (resolution + 1) * (resolution + 1)
+    }
+
+    pub fn with_size(mut self, size: Vec2) -> Self {
+        self.size = size;
+        self
+    }
+
+    pub fn with_chunk_size(mut self, chunk_size: Vec2) -> Self {
+        self.chunk_size = chunk_size;
+        self
+    }
+
+    pub fn with_vertex_resolution(mut self, resolution: u32) -> Self {
+        self.vertex_resolution = resolution;
+        self
+    }
+
+    pub fn with_height_scale(mut self, scale: f32) -> Self {
+        self.height_scale = scale;
+        self
+    }
+
+    pub fn with_height_offset(mut self, offset: f32) -> Self {
+        self.height_offset = offset;
+        self
+    }
+
+    pub fn with_lod(mut self, lod: TerrainLodConfig) -> Self {
+        self.lod = lod;
+        self
+    }
+
+    pub fn with_streaming(mut self, streaming: TerrainStreamingConfig) -> Self {
+        self.streaming = streaming;
+        self
+    }
+
+    pub fn with_collider(mut self, collider: TerrainColliderConfig) -> Self {
+        self.collider = collider;
+        self
+    }
+
+    pub fn with_material(mut self, material: TerrainMaterialProfile) -> Self {
+        self.material = material;
+        self
+    }
 }

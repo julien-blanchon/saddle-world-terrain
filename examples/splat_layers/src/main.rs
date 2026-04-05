@@ -65,8 +65,7 @@ fn setup(mut commands: Commands, mut debug: ResMut<TerrainDebugConfig>) {
         Name::new("Example Camera"),
         ExampleCamera,
         Camera3d::default(),
-        Transform::from_xyz(180.0, 140.0, 220.0)
-            .looking_at(Vec3::new(320.0, 20.0, 320.0), Vec3::Y),
+        Transform::from_xyz(180.0, 140.0, 220.0).looking_at(Vec3::new(320.0, 20.0, 320.0), Vec3::Y),
     ));
 
     // Lighting
@@ -104,6 +103,8 @@ fn follow_focus(
     mut camera: Query<&mut Transform, (With<ExampleCamera>, Without<ExampleFocus>)>,
 ) {
     let Ok(focus) = focus.single() else { return };
-    let Ok(mut cam) = camera.single_mut() else { return };
+    let Ok(mut cam) = camera.single_mut() else {
+        return;
+    };
     cam.look_at(focus.translation + Vec3::new(0.0, 28.0, 0.0), Vec3::Y);
 }
