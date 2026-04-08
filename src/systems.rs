@@ -686,8 +686,7 @@ pub(crate) fn update_diagnostics(
             TerrainChunkState::Ready => {
                 entry.1 += 1;
                 if let Some(config) = root_configs.get(&chunk.terrain) {
-                    let resolution =
-                        crate::meshing::resolution_for_lod(config, chunk.key.lod);
+                    let resolution = crate::meshing::resolution_for_lod(config, chunk.key.lod);
                     let verts = (resolution + 1) as u64 * (resolution + 1) as u64;
                     let tris = resolution as u64 * resolution as u64 * 2;
                     total_vertices += verts;
@@ -719,7 +718,9 @@ pub(crate) fn prune_cache(
         .map(|(entity, config)| (entity, config.cache.max_entries))
         .collect();
 
-    cache.entries.retain(|key, _| root_limits.contains_key(&key.terrain));
+    cache
+        .entries
+        .retain(|key, _| root_limits.contains_key(&key.terrain));
     if cache.entries.is_empty() {
         return;
     }
