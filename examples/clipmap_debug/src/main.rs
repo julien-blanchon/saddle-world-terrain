@@ -29,13 +29,22 @@ fn main() {
         ..default()
     }));
     app.add_plugins(TerrainPlugin::default());
+    common::install_terrain_example_debug_ui(&mut app);
     app.add_systems(Startup, setup);
     app.add_systems(Update, (animate_focus, follow_focus));
     app.run();
 }
 
-fn setup(mut commands: Commands, mut debug: ResMut<TerrainDebugConfig>) {
+fn setup(
+    mut commands: Commands,
+    mut debug: ResMut<TerrainDebugConfig>,
+    mut pane: ResMut<common::TerrainExamplePane>,
+) {
     let config = common::default_config();
+    debug.show_chunk_bounds = true;
+    debug.show_focus_rings = true;
+    debug.color_mode = TerrainDebugColorMode::ByLod;
+    let pane_state = common::terrain_example_pane(&config, &debug);
 
     // Spawn terrain
     let terrain = commands
@@ -44,6 +53,7 @@ fn setup(mut commands: Commands, mut debug: ResMut<TerrainDebugConfig>) {
             config,
         ))
         .id();
+    *pane = pane_state;
 
     // Focus — drives which chunks are loaded and at what LOD
     commands.spawn((
@@ -81,10 +91,6 @@ fn setup(mut commands: Commands, mut debug: ResMut<TerrainDebugConfig>) {
         affects_lightmapped_meshes: true,
     });
 
-    // Debug: color each chunk by its LOD level so the clipmap rings are visible.
-    debug.show_chunk_bounds = true;
-    debug.show_focus_rings = true;
-    debug.color_mode = TerrainDebugColorMode::ByLod;
 }
 
 fn animate_focus(time: Res<Time>, mut q: Query<&mut Transform, With<ExampleFocus>>) {

@@ -16,11 +16,13 @@
 
 use std::sync::{Arc, Mutex};
 
+use saddle_world_terrain_example_common as common;
+
 use bevy::prelude::*;
 use saddle_camera_orbit_camera::{OrbitCamera, OrbitCameraInputTarget, OrbitCameraPlugin};
 use saddle_world_terrain::{
     TerrainBlendRange, TerrainBundle, TerrainConfig, TerrainFocus, TerrainLayer,
-    TerrainMaterialProfile, TerrainPlugin, TerrainSource, TerrainSourceHandle,
+    TerrainDebugConfig, TerrainMaterialProfile, TerrainPlugin, TerrainSource, TerrainSourceHandle,
     TerrainStreamingConfig,
 };
 
@@ -86,24 +88,27 @@ impl TerrainSource for MutableHeightSource {
 }
 
 fn main() {
-    App::new()
-        .insert_resource(ClearColor(Color::srgb(0.72, 0.82, 0.90)))
-        .add_plugins(DefaultPlugins.set(WindowPlugin {
-            primary_window: Some(Window {
-                title: "Terrain — Sculpting".into(),
-                resolution: (1440, 900).into(),
-                ..default()
-            }),
+    let mut app = App::new();
+    app.insert_resource(ClearColor(Color::srgb(0.72, 0.82, 0.90)));
+    app.add_plugins(DefaultPlugins.set(WindowPlugin {
+        primary_window: Some(Window {
+            title: "Terrain — Sculpting".into(),
+            resolution: (1440, 900).into(),
             ..default()
-        }))
-        .add_plugins((TerrainPlugin::default(), OrbitCameraPlugin::default()))
-        .add_systems(Startup, setup)
-        .add_systems(Update, (move_brush, sculpt_terrain, update_overlay))
-        .run();
+        }),
+        ..default()
+    }));
+    app.add_plugins((TerrainPlugin::default(), OrbitCameraPlugin::default()));
+    common::install_terrain_example_debug_ui(&mut app);
+    app.add_systems(Startup, setup);
+    app.add_systems(Update, (move_brush, sculpt_terrain, update_overlay));
+    app.run();
 }
 
 fn setup(
     mut commands: Commands,
+    debug: Res<TerrainDebugConfig>,
+    mut pane: ResMut<common::TerrainExamplePane>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
@@ -117,7 +122,9 @@ fn setup(
     };
 
     let config = sculpt_config();
+    let pane_state = common::terrain_example_pane(&config, &debug);
     let terrain = commands.spawn(TerrainBundle::new(source, config)).id();
+    *pane = pane_state;
 
     commands.insert_resource(SculptState {
         heights: shared_heights,

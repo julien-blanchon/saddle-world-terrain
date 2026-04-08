@@ -982,7 +982,7 @@ dependencies = [
 [[package]]
 name = "bevy_iconify"
 version = "0.1.0"
-source = "git+https://github.com/julien-blanchon/saddle-pane#f0f0e26fdabf5d0463a59bba4f0958cba020f2b2"
+source = "git+https://github.com/julien-blanchon/saddle-pane#2936f7209cac2a756849be0dba4a3d2ab7343c91"
 dependencies = [
  "blake3",
  "fst",
@@ -999,7 +999,7 @@ dependencies = [
 [[package]]
 name = "bevy_iconify_image"
 version = "0.1.0"
-source = "git+https://github.com/julien-blanchon/saddle-pane#f0f0e26fdabf5d0463a59bba4f0958cba020f2b2"
+source = "git+https://github.com/julien-blanchon/saddle-pane#2936f7209cac2a756849be0dba4a3d2ab7343c91"
 dependencies = [
  "bevy",
  "tiny-skia",
@@ -4952,7 +4952,7 @@ dependencies = [
 [[package]]
 name = "saddle-pane"
 version = "0.1.0"
-source = "git+https://github.com/julien-blanchon/saddle-pane#f0f0e26fdabf5d0463a59bba4f0958cba020f2b2"
+source = "git+https://github.com/julien-blanchon/saddle-pane#2936f7209cac2a756849be0dba4a3d2ab7343c91"
 dependencies = [
  "bevy",
  "bevy_flair",
@@ -4966,7 +4966,7 @@ dependencies = [
 [[package]]
 name = "saddle-pane-derive"
 version = "0.1.0"
-source = "git+https://github.com/julien-blanchon/saddle-pane#f0f0e26fdabf5d0463a59bba4f0958cba020f2b2"
+source = "git+https://github.com/julien-blanchon/saddle-pane#2936f7209cac2a756849be0dba4a3d2ab7343c91"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -4977,32 +4977,6 @@ dependencies = [
 name = "saddle-procgen-noise"
 version = "0.1.0"
 source = "git+https://github.com/julien-blanchon/saddle-procgen-noise#e97d342520ef37020efbcc682ac59dc27d51e03f"
-dependencies = [
- "bevy",
-]
-
-[[package]]
-name = "saddle-rendering-grass"
-version = "0.1.0"
-source = "git+https://github.com/julien-blanchon/saddle-rendering-grass#7547d2a45089bf56c0c21cd980c6c844d2c92eb5"
-dependencies = [
- "bevy",
- "saddle-world-wind",
-]
-
-[[package]]
-name = "saddle-world-foliage"
-version = "0.1.0"
-source = "git+https://github.com/julien-blanchon/saddle-world-foliage#5bd4667fa1cb7a5edf741565375512faed1a34d4"
-dependencies = [
- "bevy",
- "saddle-world-wind",
-]
-
-[[package]]
-name = "saddle-world-sky"
-version = "0.1.0"
-source = "git+https://github.com/julien-blanchon/saddle-world-sky#180802c437a4d481bbbcb04294d82d8495b71622"
 dependencies = [
  "bevy",
 ]
@@ -5046,6 +5020,11 @@ name = "saddle-world-terrain-example-common"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "bevy_flair",
+ "bevy_input_focus",
+ "bevy_ui_widgets",
+ "saddle-pane",
+ "saddle-procgen-noise",
  "saddle-world-terrain",
 ]
 
@@ -5055,7 +5034,9 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "saddle-camera-orbit-camera",
+ "saddle-procgen-noise",
  "saddle-world-terrain",
+ "saddle-world-terrain-example-common",
 ]
 
 [[package]]
@@ -5064,26 +5045,9 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "saddle-camera-orbit-camera",
- "saddle-world-terrain",
-]
-
-[[package]]
-name = "saddle-world-terrain-example-open-world-showcase"
-version = "0.1.0"
-dependencies = [
- "bevy",
- "bevy_flair",
- "bevy_input_focus",
- "bevy_ui_widgets",
- "saddle-bevy-e2e",
- "saddle-camera-orbit-camera",
- "saddle-pane",
  "saddle-procgen-noise",
- "saddle-rendering-grass",
- "saddle-world-foliage",
- "saddle-world-sky",
  "saddle-world-terrain",
- "saddle-world-wind",
+ "saddle-world-terrain-example-common",
 ]
 
 [[package]]
@@ -5111,6 +5075,7 @@ dependencies = [
  "bevy",
  "saddle-camera-orbit-camera",
  "saddle-world-terrain",
+ "saddle-world-terrain-example-common",
 ]
 
 [[package]]
@@ -5123,14 +5088,6 @@ dependencies = [
  "saddle-camera-orbit-camera",
  "saddle-world-terrain",
  "saddle-world-terrain-example-common",
-]
-
-[[package]]
-name = "saddle-world-wind"
-version = "0.1.0"
-source = "git+https://github.com/julien-blanchon/saddle-world-wind#20820b8abb70a360e514057409b77f4b013c79b1"
-dependencies = [
- "bevy",
 ]
 
 [[package]]
@@ -6311,7 +6268,6 @@ dependencies = [
  "smallvec",
  "static_assertions",
  "wasm-bindgen",
- "wasm-bindgen-futures",
  "web-sys",
  "wgpu-core",
  "wgpu-hal",

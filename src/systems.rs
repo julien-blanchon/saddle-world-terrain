@@ -712,25 +712,43 @@ pub(crate) fn update_diagnostics(
 
 pub(crate) fn prune_cache(
     mut cache: ResMut<TerrainChunkCache>,
-    roots: Query<&TerrainConfig, With<TerrainRoot>>,
+    roots: Query<(Entity, &TerrainConfig), With<TerrainRoot>>,
 ) {
-    let max_entries = roots
+    let root_limits: HashMap<Entity, usize> = roots
         .iter()
-        .map(|config| config.cache.max_entries)
-        .max()
-        .unwrap_or(0);
-    if max_entries == 0 || cache.entries.len() <= max_entries {
+        .map(|(entity, config)| (entity, config.cache.max_entries))
+        .collect();
+
+    cache.entries.retain(|key, _| root_limits.contains_key(&key.terrain));
+    if cache.entries.is_empty() {
         return;
     }
 
-    let mut entries: Vec<_> = cache
-        .entries
-        .iter()
-        .map(|(key, value)| (*key, value.last_used))
-        .collect();
-    entries.sort_by_key(|(_, last_used)| *last_used);
-    let remove_count = cache.entries.len().saturating_sub(max_entries);
-    for (key, _) in entries.into_iter().take(remove_count) {
+    let mut entries_by_root = HashMap::<Entity, Vec<(TerrainCacheKey, u64)>>::new();
+    for (key, value) in &cache.entries {
+        entries_by_root
+            .entry(key.terrain)
+            .or_default()
+            .push((*key, value.last_used));
+    }
+
+    let mut keys_to_remove = Vec::new();
+    for (terrain, mut entries) in entries_by_root {
+        let max_entries = root_limits.get(&terrain).copied().unwrap_or(0);
+        if max_entries == 0 {
+            keys_to_remove.extend(entries.into_iter().map(|(key, _)| key));
+            continue;
+        }
+        if entries.len() <= max_entries {
+            continue;
+        }
+
+        entries.sort_by_key(|(_, last_used)| *last_used);
+        let remove_count = entries.len().saturating_sub(max_entries);
+        keys_to_remove.extend(entries.into_iter().take(remove_count).map(|(key, _)| key));
+    }
+
+    for key in keys_to_remove {
         cache.entries.remove(&key);
     }
 }

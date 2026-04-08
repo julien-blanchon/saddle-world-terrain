@@ -46,7 +46,7 @@
 
 | Field | Type | Default | Effect | Performance notes |
 | --- | --- | --- | --- | --- |
-| `max_entries` | `usize` | `256` | Maximum cached chunk build artifacts | Increase if focus points revisit the same regions often |
+| `max_entries` | `usize` | `256` | Maximum cached chunk build artifacts for a single terrain root | Increase if focus points revisit the same regions often |
 
 ## `TerrainMaterialProfile`
 
@@ -57,6 +57,7 @@
 | `metallic` | `f32` | `0.0` | Shared metallic value |
 | `double_sided` | `bool` | `false` | Enables two-sided rendering when the terrain is viewed from below |
 | `layers` | `Vec<TerrainLayer>` | one neutral layer | Defines the reusable layer blending rules |
+| `texture_arrays` | `Option<TerrainTextureArraySettings>` | `None` | Enables the textured terrain material path with array-backed albedo and optional normals |
 
 ## `TerrainLayer`
 
@@ -64,10 +65,21 @@
 | --- | --- | --- | --- |
 | `name` | `String` | required | Logical layer name used by consumers and debugging |
 | `color` | `Color` | required | Vertex-color tint baked into the terrain mesh |
+| `texture_index` | `Option<u32>` | `None` | Selects the texture-array slice used when `texture_arrays` is enabled; defaults to the layer index |
 | `explicit_weight_index` | `Option<usize>` | `None` | Reads a flattened explicit weight channel from the source |
 | `height_range` | `Option<TerrainBlendRange>` | `None` | Applies a normalized-height weight gate |
 | `slope_range_degrees` | `Option<TerrainBlendRange>` | `None` | Applies a slope-in-degrees weight gate |
 | `strength` | `f32` | `1.0` | Multiplies the total layer contribution before normalization |
+
+## `TerrainTextureArraySettings`
+
+| Field | Type | Default | Effect |
+| --- | --- | --- | --- |
+| `albedo_array` | `Handle<Image>` | default handle | Texture array sampled for terrain albedo |
+| `normal_array` | `Option<Handle<Image>>` | `None` | Optional texture array sampled for terrain normals |
+| `scale` | `Vec2` | `Vec2::splat(1.0 / 12.0)` | UV or triplanar texture repetition scale |
+| `projection` | `TerrainTextureProjection` | `Uv` | Chooses UV or triplanar projection in the textured shader path |
+| `normal_map_strength` | `f32` | `1.0` | Strength multiplier applied to sampled normal maps |
 
 ## `TerrainDebugConfig`
 

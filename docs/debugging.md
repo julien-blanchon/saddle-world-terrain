@@ -75,11 +75,38 @@ Useful targets to inspect:
 
 ## E2E Checks
 
-The lab scenarios cover:
+Each shipped example has a dedicated scenario in the lab harness:
 
+- `basic` → `example_basic_smoke`
+- `clipmap_debug` → `example_clipmap_debug`
+- `splat_layers` → `example_splat_layers`
+- `async_streaming` → `example_async_streaming`
+- `physics_colliders` → `example_physics_colliders`
+- `island` → `example_island`
+- `mountain_range` → `example_mountain_range`
+- `terrain_sculpting` → `example_terrain_sculpting`
+
+Those example-backed scenarios also assert that the shared `saddle-pane` controls and stats
+resources are present so the example debug surface stays in lockstep with the shipped scenes.
+
+The lab scenarios currently cover:
+
+- `example_basic_smoke`
+- `example_clipmap_debug`
+- `example_splat_layers`
+- `example_async_streaming`
+- `example_physics_colliders`
+- `example_island`
+- `example_mountain_range`
+- `example_terrain_sculpting`
 - `terrain_smoke`
 - `terrain_lod_transition`
 - `terrain_material_layers`
 - `terrain_collider_walk`
+- `terrain_probe_sample`
+- `terrain_debug_modes`
+- `terrain_async_throttle`
+- `terrain_slope_band`
+- `terrain_chunk_lifecycle`
 
-Each scenario includes at least one runtime assertion in addition to screenshots.
+Each scenario includes runtime assertions in addition to screenshots and logs.

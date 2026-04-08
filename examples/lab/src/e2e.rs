@@ -18,6 +18,9 @@ impl Plugin for E2EPlugin {
 
         if let Some(name) = scenario_name {
             if let Some(mut scenario) = scenarios::scenario_by_name(&name) {
+                if let Some(scene) = scenarios::scene_for_scenario(&name) {
+                    app.insert_resource(scene);
+                }
                 if handoff {
                     scenario.actions.push(Action::Handoff);
                 }

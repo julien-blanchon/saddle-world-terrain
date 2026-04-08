@@ -32,18 +32,27 @@ fn main() {
         ..default()
     }));
     app.add_plugins(TerrainPlugin::default());
+    common::install_terrain_example_debug_ui(&mut app);
     app.add_systems(Startup, setup);
     app.add_systems(Update, (animate_focus, follow_focus));
     app.run();
 }
 
-fn setup(mut commands: Commands, mut debug: ResMut<TerrainDebugConfig>) {
+fn setup(
+    mut commands: Commands,
+    mut debug: ResMut<TerrainDebugConfig>,
+    mut pane: ResMut<common::TerrainExamplePane>,
+) {
     // --------------- Large terrain with throttled streaming ---------------
     let mut config = common::default_config();
     config.size = Vec2::new(1024.0, 1024.0); // larger world
     config.streaming.max_builds_per_frame = 2; // throttle to 2 chunks/frame
     config.streaming.visual_radius = 240.0; // wide view distance
     config.lod.hysteresis = 16.0; // prevent LOD thrashing
+    debug.show_chunk_bounds = true;
+    debug.show_focus_rings = true;
+    debug.color_mode = TerrainDebugColorMode::Natural;
+    let pane_state = common::terrain_example_pane(&config, &debug);
 
     // Spawn terrain
     let terrain = commands
@@ -52,6 +61,7 @@ fn setup(mut commands: Commands, mut debug: ResMut<TerrainDebugConfig>) {
             config,
         ))
         .id();
+    *pane = pane_state;
 
     // --------------- Secondary focus point (resource-based) ---------------
     // This adds a second streaming origin far from the primary focus,
@@ -99,10 +109,6 @@ fn setup(mut commands: Commands, mut debug: ResMut<TerrainDebugConfig>) {
         affects_lightmapped_meshes: true,
     });
 
-    // Debug
-    debug.show_chunk_bounds = true;
-    debug.show_focus_rings = true;
-    debug.color_mode = TerrainDebugColorMode::Natural;
 }
 
 fn animate_focus(time: Res<Time>, mut q: Query<&mut Transform, With<ExampleFocus>>) {

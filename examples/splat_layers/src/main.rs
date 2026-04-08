@@ -30,15 +30,24 @@ fn main() {
         ..default()
     }));
     app.add_plugins(TerrainPlugin::default());
+    common::install_terrain_example_debug_ui(&mut app);
     app.add_systems(Startup, setup);
     app.add_systems(Update, (animate_focus, follow_focus));
     app.run();
 }
 
-fn setup(mut commands: Commands, mut debug: ResMut<TerrainDebugConfig>) {
+fn setup(
+    mut commands: Commands,
+    mut debug: ResMut<TerrainDebugConfig>,
+    mut pane: ResMut<common::TerrainExamplePane>,
+) {
     // Wider visual radius to see more layer transitions at once.
     let mut config = common::default_config();
     config.streaming.visual_radius = 220.0;
+    debug.show_chunk_bounds = true;
+    debug.show_focus_rings = true;
+    debug.color_mode = TerrainDebugColorMode::ByLayerDominance;
+    let pane_state = common::terrain_example_pane(&config, &debug);
 
     // Spawn terrain
     let terrain = commands
@@ -47,6 +56,7 @@ fn setup(mut commands: Commands, mut debug: ResMut<TerrainDebugConfig>) {
             config,
         ))
         .id();
+    *pane = pane_state;
 
     // Focus
     commands.spawn((
@@ -84,10 +94,6 @@ fn setup(mut commands: Commands, mut debug: ResMut<TerrainDebugConfig>) {
         affects_lightmapped_meshes: true,
     });
 
-    // Debug: color by dominant layer so the splatmap is directly visible.
-    debug.show_chunk_bounds = true;
-    debug.show_focus_rings = true;
-    debug.color_mode = TerrainDebugColorMode::ByLayerDominance;
 }
 
 fn animate_focus(time: Res<Time>, mut q: Query<&mut Transform, With<ExampleFocus>>) {

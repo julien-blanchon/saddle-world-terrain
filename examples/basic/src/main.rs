@@ -29,16 +29,25 @@ fn main() {
         ..default()
     }));
     app.add_plugins(TerrainPlugin::default());
+    common::install_terrain_example_debug_ui(&mut app);
     app.add_systems(Startup, setup);
     app.add_systems(Update, (animate_focus, follow_focus));
     app.run();
 }
 
-fn setup(mut commands: Commands, mut debug: ResMut<TerrainDebugConfig>) {
+fn setup(
+    mut commands: Commands,
+    mut debug: ResMut<TerrainDebugConfig>,
+    mut pane: ResMut<common::TerrainExamplePane>,
+) {
     // --------------- Terrain config ---------------
     // default_config() provides a 640x640 terrain with 5 material layers:
     //   water, meadow, dirt, rock, snow — blended by height and slope.
     let config = common::default_config();
+    debug.show_chunk_bounds = true;
+    debug.show_focus_rings = true;
+    debug.color_mode = TerrainDebugColorMode::Natural;
+    let pane_state = common::terrain_example_pane(&config, &debug);
 
     // --------------- Spawn terrain ---------------
     let terrain = commands
@@ -47,6 +56,7 @@ fn setup(mut commands: Commands, mut debug: ResMut<TerrainDebugConfig>) {
             config,
         ))
         .id();
+    *pane = pane_state;
 
     // --------------- Focus entity (drives chunk streaming) ---------------
     commands.spawn((
@@ -84,10 +94,6 @@ fn setup(mut commands: Commands, mut debug: ResMut<TerrainDebugConfig>) {
         affects_lightmapped_meshes: true,
     });
 
-    // --------------- Debug visualization ---------------
-    debug.show_chunk_bounds = true;
-    debug.show_focus_rings = true;
-    debug.color_mode = TerrainDebugColorMode::Natural;
 }
 
 /// Move the focus entity in an elliptical orbit so we see streaming in action.

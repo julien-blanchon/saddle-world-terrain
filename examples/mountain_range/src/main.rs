@@ -12,36 +12,48 @@
 //!   - Middle mouse drag: pan camera
 //!   - Scroll wheel: zoom in/out
 
+use saddle_world_terrain_example_common as common;
+
 use bevy::prelude::*;
 use saddle_camera_orbit_camera::{OrbitCamera, OrbitCameraInputTarget, OrbitCameraPlugin};
+use saddle_procgen_noise::{
+    Fbm, FractalConfig, NoiseSeed, NoiseSource, Perlin, Ridged, RidgedConfig, signed_to_unit,
+};
 use saddle_world_terrain::{
     TerrainBlendRange, TerrainBundle, TerrainConfig, TerrainDataset, TerrainFocus, TerrainLayer,
-    TerrainMaterialProfile, TerrainPlugin, TerrainStreamingConfig,
+    TerrainDebugConfig, TerrainMaterialProfile, TerrainPlugin, TerrainStreamingConfig,
 };
 
 const TERRAIN_SIZE: Vec2 = Vec2::new(800.0, 800.0);
 const TERRAIN_CENTER: Vec2 = Vec2::new(400.0, 400.0);
 
 fn main() {
-    App::new()
-        .insert_resource(ClearColor(Color::srgb(0.68, 0.78, 0.92)))
-        .add_plugins(DefaultPlugins.set(WindowPlugin {
-            primary_window: Some(Window {
-                title: "Terrain — Mountain Range".into(),
-                resolution: (1440, 900).into(),
-                ..default()
-            }),
+    let mut app = App::new();
+    app.insert_resource(ClearColor(Color::srgb(0.68, 0.78, 0.92)));
+    app.add_plugins(DefaultPlugins.set(WindowPlugin {
+        primary_window: Some(Window {
+            title: "Terrain — Mountain Range".into(),
+            resolution: (1440, 900).into(),
             ..default()
-        }))
-        .add_plugins((TerrainPlugin::default(), OrbitCameraPlugin::default()))
-        .add_systems(Startup, setup)
-        .run();
+        }),
+        ..default()
+    }));
+    app.add_plugins((TerrainPlugin::default(), OrbitCameraPlugin::default()));
+    common::install_terrain_example_debug_ui(&mut app);
+    app.add_systems(Startup, setup);
+    app.run();
 }
 
-fn setup(mut commands: Commands) {
+fn setup(
+    mut commands: Commands,
+    debug: Res<TerrainDebugConfig>,
+    mut pane: ResMut<common::TerrainExamplePane>,
+) {
     let dataset = build_mountain_dataset();
     let config = mountain_config();
+    let pane_state = common::terrain_example_pane(&config, &debug);
     let terrain = commands.spawn(TerrainBundle::new(dataset, config)).id();
+    *pane = pane_state;
 
     // Camera — positioned to see the mountain range from a dramatic angle
     commands.spawn((
@@ -95,12 +107,46 @@ fn setup(mut commands: Commands) {
 
 fn build_mountain_dataset() -> TerrainDataset {
     let dims = UVec2::new(257, 257);
-    TerrainDataset::from_fn(dims, |_coord, uv| {
-        // Major ridge line running diagonally
+
+    // Coherent noise detail layers via saddle-procgen-noise
+    let detail_noise = Fbm::new(
+        Perlin::new(NoiseSeed(19)),
+        FractalConfig {
+            octaves: 4,
+            base_frequency: 3.0,
+            lacunarity: 2.1,
+            gain: 0.48,
+            ..default()
+        },
+    );
+    let fine_noise = Fbm::new(
+        Perlin::new(NoiseSeed(61)),
+        FractalConfig {
+            octaves: 2,
+            base_frequency: 7.0,
+            gain: 0.4,
+            ..default()
+        },
+    );
+    // Ridged noise adds sharp mountain crests to the structural shapes
+    let ridge_detail = Ridged::new(
+        Perlin::new(NoiseSeed(37)),
+        RidgedConfig {
+            fractal: FractalConfig {
+                octaves: 3,
+                base_frequency: 2.4,
+                ..default()
+            },
+            ..default()
+        },
+    );
+
+    TerrainDataset::from_fn(dims, move |_coord, uv| {
+        // Major ridge line running diagonally — structural shape
         let ridge_axis = (uv.x * 0.7 + uv.y * 0.3 - 0.5).abs();
         let ridge = (1.0 - ridge_axis * 3.2).max(0.0).powf(0.8);
 
-        // Secondary peaks
+        // Secondary peaks — structural shape
         let peak1_dist = (uv - Vec2::new(0.3, 0.35)).length();
         let peak1 = (1.0 - peak1_dist * 2.5).max(0.0).powf(1.2);
 
@@ -110,20 +156,23 @@ fn build_mountain_dataset() -> TerrainDataset {
         let peak3_dist = (uv - Vec2::new(0.5, 0.7)).length();
         let peak3 = (1.0 - peak3_dist * 2.8).max(0.0).powf(1.3);
 
-        // Noise detail layers
-        let noise1 = ((uv.x * 12.5).sin() * (uv.y * 11.3).cos() * 0.3
-            + (uv.x * 6.2 + uv.y * 8.1).sin() * 0.2)
-            * 0.5
-            + 0.5;
-        let noise2 = ((uv.x * 28.0 + 1.5).sin() * (uv.y * 24.0 - 0.8).cos()) * 0.08;
+        // Noise detail layers from saddle-procgen-noise (replaces trig-based fake noise)
+        let noise1 = signed_to_unit(detail_noise.sample(uv * 4.0));
+        let noise2 = fine_noise.sample(uv * 4.0) * 0.08;
+        let ridge_crests = signed_to_unit(ridge_detail.sample(uv * 3.0));
 
         // Valley carved between peaks
         let valley_axis = ((uv.x - 0.48) * 2.0).abs();
         let valley = (1.0 - valley_axis * 3.0).max(0.0) * 0.15;
 
-        let elevation =
-            ridge * 0.35 + peak1 * 0.30 + peak2 * 0.25 + peak3 * 0.20 + noise1 * 0.12 + noise2
-                - valley;
+        let elevation = ridge * 0.35
+            + peak1 * 0.30
+            + peak2 * 0.25
+            + peak3 * 0.20
+            + noise1 * 0.12
+            + noise2
+            + ridge_crests * 0.06
+            - valley;
 
         // Base elevation so valleys aren't at zero
         (elevation * 0.85 + 0.08).clamp(0.0, 1.0)

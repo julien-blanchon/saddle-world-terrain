@@ -1,9 +1,10 @@
 use super::*;
 use crate::{
-    TerrainBundle, TerrainConfig, TerrainDataset, TerrainFocus, TerrainPlugin, TerrainProbe,
-    TerrainProbeSample,
+    TerrainBundle, TerrainCacheConfig, TerrainConfig, TerrainDataset, TerrainFocus, TerrainPlugin,
+    TerrainProbe, TerrainProbeSample,
 };
 use bevy::asset::AssetPlugin;
+use bevy::ecs::system::RunSystemOnce;
 use bevy::gizmos::GizmoPlugin;
 use bevy::shader::Shader;
 use bevy::tasks::{AsyncComputeTaskPool, TaskPoolBuilder};
@@ -177,4 +178,90 @@ fn probe_sample_is_removed_when_probe_leaves_the_terrain() {
 
     app.update();
     assert!(app.world().get::<TerrainProbeSample>(probe).is_none());
+}
+
+#[test]
+fn prune_cache_respects_per_root_limits_and_drops_orphans() {
+    let mut app = test_app();
+    let terrain_a = app
+        .world_mut()
+        .spawn(TerrainBundle::new(
+            dataset(),
+            TerrainConfig {
+                cache: TerrainCacheConfig { max_entries: 1 },
+                ..default()
+            },
+        ))
+        .id();
+    let terrain_b = app
+        .world_mut()
+        .spawn(TerrainBundle::new(
+            dataset(),
+            TerrainConfig {
+                cache: TerrainCacheConfig { max_entries: 2 },
+                ..default()
+            },
+        ))
+        .id();
+    let orphan = Entity::from_bits(9_999);
+
+    {
+        let mut cache = app.world_mut().resource_mut::<TerrainChunkCache>();
+        for (terrain, coord, last_used) in [
+            (terrain_a, IVec2::new(0, 0), 10),
+            (terrain_a, IVec2::new(1, 0), 20),
+            (terrain_b, IVec2::new(0, 0), 10),
+            (terrain_b, IVec2::new(1, 0), 20),
+            (terrain_b, IVec2::new(2, 0), 30),
+            (orphan, IVec2::new(0, 0), 40),
+        ] {
+            cache.entries.insert(
+                TerrainCacheKey {
+                    terrain,
+                    revision: 1,
+                    key: crate::TerrainChunkKey { coord, lod: 0 },
+                    color_mode: crate::TerrainDebugColorMode::Natural,
+                },
+                TerrainCacheEntry {
+                    mesh: Handle::<Mesh>::default(),
+                    bounds: TerrainChunkBounds::default(),
+                    collider_patch: None,
+                    last_used,
+                },
+            );
+        }
+    }
+
+    let _ = app.world_mut().run_system_once(prune_cache);
+
+    let cache = app.world().resource::<TerrainChunkCache>();
+    let root_a_entries = cache
+        .entries
+        .iter()
+        .filter(|(key, _)| key.terrain == terrain_a)
+        .count();
+    let root_b_entries = cache
+        .entries
+        .iter()
+        .filter(|(key, _)| key.terrain == terrain_b)
+        .count();
+    let root_a_coords: Vec<_> = cache
+        .entries
+        .keys()
+        .filter(|key| key.terrain == terrain_a)
+        .map(|key| key.key.coord)
+        .collect();
+    let root_b_coords: Vec<_> = cache
+        .entries
+        .keys()
+        .filter(|key| key.terrain == terrain_b)
+        .map(|key| key.key.coord)
+        .collect();
+
+    assert_eq!(root_a_entries, 1);
+    assert_eq!(root_b_entries, 2);
+    assert_eq!(root_a_coords, vec![IVec2::new(1, 0)]);
+    assert!(root_b_coords.contains(&IVec2::new(1, 0)));
+    assert!(root_b_coords.contains(&IVec2::new(2, 0)));
+    assert!(cache.entries.keys().all(|key| key.terrain != orphan));
 }

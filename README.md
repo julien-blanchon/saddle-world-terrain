@@ -102,11 +102,19 @@ Layer weights can come from:
 
 This keeps the public API renderer-neutral while still giving a practical v1 shading path.
 
+For projects that want textured terrain without changing the layering API, `TerrainMaterialProfile`
+also supports optional texture arrays plus per-layer `texture_index` selection. The same layer
+weights still drive the visual result; the shader path simply swaps vertex-color tinting for
+texture-array sampling.
+
 `TerrainColliderPatch` is chunk-local data. Its `origin` starts at zero for the owning chunk entity, while the owning `TerrainChunk` key and transform define where that patch lives in the full terrain.
 
 ## Runtime Terrain Modification
 
-Terrain can be modified at runtime by replacing the `TerrainSourceHandle` on the terrain entity. The terrain system detects the source change and rebuilds affected chunks automatically. See the `terrain_sculpting` example for a complete brush-based sculpting demo using a custom `TerrainSource` backed by a shared mutable height buffer.
+Terrain can be modified at runtime by replacing the `TerrainSourceHandle` on the terrain entity.
+Today that invalidates the currently resident chunks for the owning terrain root and rebuilds them
+against the new source revision. See the `terrain_sculpting` example for a complete brush-based
+sculpting demo using a custom `TerrainSource` backed by a shared mutable height buffer.
 
 ## Builder API
 
@@ -145,25 +153,21 @@ Use `TerrainConfig::chunk_vertex_count(lod)` and `TerrainConfig::total_chunk_cou
 
 ## Examples
 
-| Example | What it shows | Run |
-| --- | --- | --- |
-| `basic` | Minimal terrain root plus one animated focus | `cargo run -p saddle-world-terrain-example-basic` |
-| `clipmap_debug` | LOD color mode, chunk bounds, focus radii | `cargo run -p saddle-world-terrain-example-clipmap-debug` |
-| `splat_layers` | Dominant-layer debug coloring from weight, height, and slope blending | `cargo run -p saddle-world-terrain-example-splat-layers` |
-| `open_world_showcase` | Performance-optimized integration demo combining terrain streaming with procedural noise, sky, wind, foliage, and grass in one art-directed valley scene | `cargo run -p saddle-world-terrain-example-open-world-showcase` |
-| `async_streaming` | Tight build budget, continuous focus movement, and a secondary explicit focus point | `cargo run -p saddle-world-terrain-example-async-streaming` |
-| `physics_colliders` | Backend-agnostic collider payload generation and collider debug bounds | `cargo run -p saddle-world-terrain-example-physics-colliders` |
-| `island` | Island-shaped terrain with radial falloff, water plane, and five material layers | `cargo run -p saddle-world-terrain-example-island` |
-| `mountain_range` | High-elevation terrain with dramatic peaks, slope-based rock, and snow | `cargo run -p saddle-world-terrain-example-mountain-range` |
-| `terrain_sculpting` | Runtime terrain modification with brush-based raising and lowering | `cargo run -p saddle-world-terrain-example-terrain-sculpting` |
+| Example | What it shows | Run | E2E scenario |
+| --- | --- | --- | --- |
+| `basic` | Minimal terrain root plus one animated focus | `cargo run -p saddle-world-terrain-example-basic` | `example_basic_smoke` |
+| `clipmap_debug` | LOD color mode, chunk bounds, focus radii | `cargo run -p saddle-world-terrain-example-clipmap-debug` | `example_clipmap_debug` |
+| `splat_layers` | Dominant-layer debug coloring from weight, height, and slope blending | `cargo run -p saddle-world-terrain-example-splat-layers` | `example_splat_layers` |
+| `async_streaming` | Tight build budget, continuous focus movement, and a secondary explicit focus point | `cargo run -p saddle-world-terrain-example-async-streaming` | `example_async_streaming` |
+| `physics_colliders` | Backend-agnostic collider payload generation and collider debug bounds | `cargo run -p saddle-world-terrain-example-physics-colliders` | `example_physics_colliders` |
+| `island` | Island-shaped terrain with radial falloff, water plane, and five material layers | `cargo run -p saddle-world-terrain-example-island` | `example_island` |
+| `mountain_range` | High-elevation terrain with dramatic peaks, slope-based rock, and snow | `cargo run -p saddle-world-terrain-example-mountain-range` | `example_mountain_range` |
+| `terrain_sculpting` | Runtime terrain modification with brush-based raising and lowering | `cargo run -p saddle-world-terrain-example-terrain-sculpting` | `example_terrain_sculpting` |
+
+All shipped examples now include a live `saddle-pane` surface: a top-right controls pane for
+debug and streaming knobs plus a bottom-right stats pane for runtime terrain diagnostics.
 
 The richer standalone validation app lives in [`examples/lab`](examples/lab/README.md).
-
-Smoke-check the open-world integration showcase with:
-
-```bash
-cargo run -p saddle-world-terrain-example-open-world-showcase --features e2e -- open_world_showcase_smoke
-```
 
 ## Performance Tuning
 

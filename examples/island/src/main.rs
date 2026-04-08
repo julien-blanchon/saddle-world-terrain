@@ -11,11 +11,16 @@
 //!   - Middle mouse drag: pan camera
 //!   - Scroll wheel: zoom in/out
 
+use saddle_world_terrain_example_common as common;
+
 use bevy::prelude::*;
 use saddle_camera_orbit_camera::{OrbitCamera, OrbitCameraInputTarget, OrbitCameraPlugin};
+use saddle_procgen_noise::{
+    Fbm, FractalConfig, NoiseSeed, NoiseSource, Perlin, Ridged, RidgedConfig, signed_to_unit,
+};
 use saddle_world_terrain::{
     TerrainBlendRange, TerrainBundle, TerrainConfig, TerrainDataset, TerrainFocus, TerrainLayer,
-    TerrainMaterialProfile, TerrainPlugin, TerrainStreamingConfig,
+    TerrainDebugConfig, TerrainMaterialProfile, TerrainPlugin, TerrainStreamingConfig,
 };
 
 const TERRAIN_SIZE: Vec2 = Vec2::new(512.0, 512.0);
@@ -23,29 +28,34 @@ const TERRAIN_CENTER: Vec2 = Vec2::new(256.0, 256.0);
 const SEA_LEVEL: f32 = 2.0;
 
 fn main() {
-    App::new()
-        .insert_resource(ClearColor(Color::srgb(0.52, 0.72, 0.88)))
-        .add_plugins(DefaultPlugins.set(WindowPlugin {
-            primary_window: Some(Window {
-                title: "Terrain — Island".into(),
-                resolution: (1440, 900).into(),
-                ..default()
-            }),
+    let mut app = App::new();
+    app.insert_resource(ClearColor(Color::srgb(0.52, 0.72, 0.88)));
+    app.add_plugins(DefaultPlugins.set(WindowPlugin {
+        primary_window: Some(Window {
+            title: "Terrain — Island".into(),
+            resolution: (1440, 900).into(),
             ..default()
-        }))
-        .add_plugins((TerrainPlugin::default(), OrbitCameraPlugin::default()))
-        .add_systems(Startup, setup)
-        .run();
+        }),
+        ..default()
+    }));
+    app.add_plugins((TerrainPlugin::default(), OrbitCameraPlugin::default()));
+    common::install_terrain_example_debug_ui(&mut app);
+    app.add_systems(Startup, setup);
+    app.run();
 }
 
 fn setup(
     mut commands: Commands,
+    debug: Res<TerrainDebugConfig>,
+    mut pane: ResMut<common::TerrainExamplePane>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     let dataset = build_island_dataset();
     let config = island_config();
+    let pane_state = common::terrain_example_pane(&config, &debug);
     let terrain = commands.spawn(TerrainBundle::new(dataset, config)).id();
+    *pane = pane_state;
 
     // Water plane at sea level
     commands.spawn((
@@ -113,19 +123,50 @@ fn setup(
 
 fn build_island_dataset() -> TerrainDataset {
     let dims = UVec2::new(257, 257);
-    TerrainDataset::from_fn(dims, |_coord, uv| {
+
+    // Coherent noise layers via saddle-procgen-noise
+    let ridge_noise = Fbm::new(
+        Perlin::new(NoiseSeed(7)),
+        FractalConfig {
+            octaves: 4,
+            base_frequency: 2.0,
+            lacunarity: 2.1,
+            gain: 0.52,
+            ..default()
+        },
+    );
+    let mountain_noise = Ridged::new(
+        Perlin::new(NoiseSeed(53)),
+        RidgedConfig {
+            fractal: FractalConfig {
+                octaves: 3,
+                base_frequency: 1.4,
+                ..default()
+            },
+            ..default()
+        },
+    );
+    let detail_noise = Fbm::new(
+        Perlin::new(NoiseSeed(31)),
+        FractalConfig {
+            octaves: 3,
+            base_frequency: 5.5,
+            gain: 0.42,
+            ..default()
+        },
+    );
+
+    TerrainDataset::from_fn(dims, move |_coord, uv| {
         let center = Vec2::new(0.5, 0.5);
         let dist = (uv - center).length() * 2.0;
 
         // Radial falloff — creates the island shape
         let island_mask = (1.0 - dist.powf(1.8)).max(0.0);
 
-        // Noise layers (simple procedural without external crate)
-        let ridge = ((uv.x * 8.3 + uv.y * 2.1).sin() * 0.4 + (uv.y * 7.7 - uv.x * 3.5).cos() * 0.3)
-            * 0.5
-            + 0.5;
-        let detail = ((uv.x * 22.0).sin() * (uv.y * 19.0).cos() * 0.15) * 0.5 + 0.5;
-        let mountain = ((uv.x * 4.2 + 0.3).sin() * (uv.y * 3.8 + 0.7).cos()).abs();
+        // Noise layers from saddle-procgen-noise
+        let ridge = signed_to_unit(ridge_noise.sample(uv * 4.0));
+        let mountain = signed_to_unit(mountain_noise.sample(uv * 2.0));
+        let detail = signed_to_unit(detail_noise.sample(uv * 4.0));
 
         let base = island_mask * (ridge * 0.45 + mountain * 0.35 + detail * 0.20);
         base.clamp(0.0, 1.0)

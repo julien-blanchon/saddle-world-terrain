@@ -8,6 +8,7 @@ publish = false
 bevy = { workspace = true }
 saddle-world-terrain = { workspace = true }
 saddle-camera-orbit-camera = { workspace = true }
+saddle-world-terrain-example-common = { path = "../common" }
 
 [lints]
 workspace = true

@@ -30,17 +30,27 @@ fn main() {
         ..default()
     }));
     app.add_plugins(TerrainPlugin::default());
+    common::install_terrain_example_debug_ui(&mut app);
     app.add_systems(Startup, setup);
     app.add_systems(Update, (animate_focus, follow_focus));
     app.run();
 }
 
-fn setup(mut commands: Commands, mut debug: ResMut<TerrainDebugConfig>) {
+fn setup(
+    mut commands: Commands,
+    mut debug: ResMut<TerrainDebugConfig>,
+    mut pane: ResMut<common::TerrainExamplePane>,
+) {
     // --------------- Terrain config with colliders ---------------
     let mut config = common::default_config();
     config.collider.enabled = true; // generate collision meshes
     config.collider.resolution_divisor = 4; // 1/4 the visual mesh resolution
     config.streaming.collider_radius = 70.0; // colliders within 70 world units of focus
+    debug.show_chunk_bounds = true;
+    debug.show_focus_rings = true;
+    debug.show_collider_bounds = true;
+    debug.color_mode = TerrainDebugColorMode::Natural;
+    let pane_state = common::terrain_example_pane(&config, &debug);
 
     // Spawn terrain
     let terrain = commands
@@ -49,6 +59,7 @@ fn setup(mut commands: Commands, mut debug: ResMut<TerrainDebugConfig>) {
             config,
         ))
         .id();
+    *pane = pane_state;
 
     // Focus
     commands.spawn((
@@ -86,11 +97,6 @@ fn setup(mut commands: Commands, mut debug: ResMut<TerrainDebugConfig>) {
         affects_lightmapped_meshes: true,
     });
 
-    // Debug: show collider bounds alongside chunk bounds.
-    debug.show_chunk_bounds = true;
-    debug.show_focus_rings = true;
-    debug.show_collider_bounds = true;
-    debug.color_mode = TerrainDebugColorMode::Natural;
 }
 
 fn animate_focus(time: Res<Time>, mut q: Query<&mut Transform, With<ExampleFocus>>) {

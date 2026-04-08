@@ -4,7 +4,6 @@ members = [
     "basic",
     "clipmap_debug",
     "splat_layers",
-    "open_world_showcase",
     "async_streaming",
     "physics_colliders",
     "island",
@@ -18,6 +17,11 @@ resolver = "3"
 bevy = "0.18"
 saddle-world-terrain = { path = ".." }
 saddle-camera-orbit-camera = { git = "https://github.com/julien-blanchon/saddle-camera-orbit-camera" }
+saddle-procgen-noise = { git = "https://github.com/julien-blanchon/saddle-procgen-noise" }
+saddle-pane = { git = "https://github.com/julien-blanchon/saddle-pane" }
+bevy_flair = "0.7"
+bevy_input_focus = "0.18"
+bevy_ui_widgets = "0.18"
 
 [workspace.lints.clippy]
 too_many_arguments = "allow"
