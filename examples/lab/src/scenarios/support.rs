@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use bevy::prelude::*;
-use saddle_world_terrain::{TerrainChunk, TerrainColliderData};
+use saddle_world_terrain::{TerrainChunk, TerrainColliderData, TerrainDebugColorMode};
 
 pub fn entity_by_name(world: &mut World, name: &str) -> Option<Entity> {
     let mut query = world.query::<(Entity, &Name)>();
@@ -55,4 +55,16 @@ pub fn collider_chunk_coords(world: &mut World) -> HashSet<IVec2> {
         .iter(world)
         .map(|(chunk, _)| chunk.key.coord)
         .collect()
+}
+
+pub fn set_focus_position(world: &mut World, position: Vec3) {
+    let focus = entity_by_name(world, "Lab Focus").expect("Lab Focus entity should exist");
+    let transform = Transform::from_translation(position);
+    let global_transform = GlobalTransform::from(Transform::from_translation(position));
+    world.entity_mut(focus).insert(transform);
+    world.entity_mut(focus).insert(global_transform);
+}
+
+pub fn set_debug_color_mode(world: &mut World, mode: TerrainDebugColorMode) {
+    world.resource_mut::<saddle_world_terrain::TerrainDebugConfig>().color_mode = mode;
 }

@@ -141,10 +141,10 @@ fn terrain_lod_transition() -> Scenario {
     Scenario::builder("terrain_lod_transition")
         .description("Switch to LOD debug colors, move the focus across the map, and capture both thresholds.")
         .then(Action::Custom(Box::new(|world| {
+            support::set_debug_color_mode(world, TerrainDebugColorMode::ByLod);
             let mut debug = world.resource_mut::<saddle_world_terrain::TerrainDebugConfig>();
             debug.show_chunk_bounds = true;
             debug.show_focus_rings = true;
-            debug.color_mode = TerrainDebugColorMode::ByLod;
         })))
         .then(Action::WaitFrames(12))
         .then(Action::Custom(Box::new(|world| {
@@ -158,13 +158,7 @@ fn terrain_lod_transition() -> Scenario {
         .then(Action::Screenshot("lod_near".into()))
         .then(Action::WaitFrames(1))
         .then(Action::Custom(Box::new(|world| {
-            let focus = support::entity_by_name(world, "Lab Focus").unwrap();
-            world
-                .entity_mut(focus)
-                .insert(Transform::from_xyz(780.0, 0.0, 220.0));
-            world
-                .entity_mut(focus)
-                .insert(GlobalTransform::from(Transform::from_xyz(780.0, 0.0, 220.0)));
+            support::set_focus_position(world, Vec3::new(780.0, 0.0, 220.0));
         })))
         .then(Action::WaitFrames(60))
         .then(Action::Custom(Box::new(|world| {
@@ -188,15 +182,8 @@ fn terrain_material_layers() -> Scenario {
     Scenario::builder("terrain_material_layers")
         .description("Switch to dominant-layer debug colors, probe a low wet area and a high area, and verify the dominant layer changes.")
         .then(Action::Custom(Box::new(|world| {
-            world.resource_mut::<saddle_world_terrain::TerrainDebugConfig>().color_mode =
-                TerrainDebugColorMode::ByLayerDominance;
-            let focus = support::entity_by_name(world, "Lab Focus").unwrap();
-            world
-                .entity_mut(focus)
-                .insert(Transform::from_xyz(180.0, 0.0, 420.0));
-            world
-                .entity_mut(focus)
-                .insert(GlobalTransform::from(Transform::from_xyz(180.0, 0.0, 420.0)));
+            support::set_debug_color_mode(world, TerrainDebugColorMode::ByLayerDominance);
+            support::set_focus_position(world, Vec3::new(180.0, 0.0, 420.0));
         })))
         .then(Action::WaitFrames(20))
         .then(Action::Custom(Box::new(|world| {
@@ -210,13 +197,7 @@ fn terrain_material_layers() -> Scenario {
         .then(Action::Screenshot("layers_lowland".into()))
         .then(Action::WaitFrames(1))
         .then(Action::Custom(Box::new(|world| {
-            let focus = support::entity_by_name(world, "Lab Focus").unwrap();
-            world
-                .entity_mut(focus)
-                .insert(Transform::from_xyz(700.0, 0.0, 700.0));
-            world
-                .entity_mut(focus)
-                .insert(GlobalTransform::from(Transform::from_xyz(700.0, 0.0, 700.0)));
+            support::set_focus_position(world, Vec3::new(700.0, 0.0, 700.0));
         })))
         .then(Action::WaitFrames(25))
         .then(Action::Custom(Box::new(|world| {
@@ -269,13 +250,7 @@ fn terrain_probe_sample() -> Scenario {
         .then(Action::WaitFrames(1))
         // Move the focus to a different point and confirm the sample updates.
         .then(Action::Custom(Box::new(|world| {
-            let focus = support::entity_by_name(world, "Lab Focus").unwrap();
-            world
-                .entity_mut(focus)
-                .insert(Transform::from_xyz(400.0, 0.0, 400.0));
-            world
-                .entity_mut(focus)
-                .insert(GlobalTransform::from(Transform::from_xyz(400.0, 0.0, 400.0)));
+            support::set_focus_position(world, Vec3::new(400.0, 0.0, 400.0));
         })))
         .then(Action::WaitFrames(40))
         .then(Action::Custom(Box::new(|world| {
@@ -299,11 +274,11 @@ fn terrain_collider_walk() -> Scenario {
     Scenario::builder("terrain_collider_walk")
         .description("Capture collider-bearing chunks near one focus point, move across the map, and verify the collider set follows the streamed near field.")
         .then(Action::Custom(Box::new(|world| {
+            support::set_debug_color_mode(world, TerrainDebugColorMode::ByChunkState);
             let mut debug = world.resource_mut::<saddle_world_terrain::TerrainDebugConfig>();
             debug.show_chunk_bounds = true;
             debug.show_focus_rings = true;
             debug.show_collider_bounds = true;
-            debug.color_mode = TerrainDebugColorMode::ByChunkState;
         })))
         .then(Action::WaitFrames(40))
         .then(Action::Custom(Box::new(|world| {
@@ -316,13 +291,7 @@ fn terrain_collider_walk() -> Scenario {
         .then(Action::Screenshot("collider_walk_near".into()))
         .then(Action::WaitFrames(1))
         .then(Action::Custom(Box::new(|world| {
-            let focus = support::entity_by_name(world, "Lab Focus").unwrap();
-            world
-                .entity_mut(focus)
-                .insert(Transform::from_xyz(820.0, 0.0, 760.0));
-            world
-                .entity_mut(focus)
-                .insert(GlobalTransform::from(Transform::from_xyz(820.0, 0.0, 760.0)));
+            support::set_focus_position(world, Vec3::new(820.0, 0.0, 760.0));
         })))
         .then(Action::WaitFrames(80))
         .then(Action::Custom(Box::new(|world| {
@@ -359,8 +328,8 @@ fn terrain_debug_modes() -> Scenario {
         })))
         // ByLod — mimics clipmap_debug example.
         .then(Action::Custom(Box::new(|world| {
+            support::set_debug_color_mode(world, TerrainDebugColorMode::ByLod);
             let mut debug = world.resource_mut::<saddle_world_terrain::TerrainDebugConfig>();
-            debug.color_mode = TerrainDebugColorMode::ByLod;
             debug.show_chunk_bounds = true;
             debug.show_focus_rings = true;
         })))
@@ -373,32 +342,28 @@ fn terrain_debug_modes() -> Scenario {
         .then(Action::WaitFrames(1))
         // ByChunkState
         .then(Action::Custom(Box::new(|world| {
-            world.resource_mut::<saddle_world_terrain::TerrainDebugConfig>().color_mode =
-                TerrainDebugColorMode::ByChunkState;
+            support::set_debug_color_mode(world, TerrainDebugColorMode::ByChunkState);
         })))
         .then(Action::WaitFrames(4))
         .then(Action::Screenshot("debug_mode_chunk_state".into()))
         .then(Action::WaitFrames(1))
         // ByLayerDominance
         .then(Action::Custom(Box::new(|world| {
-            world.resource_mut::<saddle_world_terrain::TerrainDebugConfig>().color_mode =
-                TerrainDebugColorMode::ByLayerDominance;
+            support::set_debug_color_mode(world, TerrainDebugColorMode::ByLayerDominance);
         })))
         .then(Action::WaitFrames(4))
         .then(Action::Screenshot("debug_mode_layer_dominance".into()))
         .then(Action::WaitFrames(1))
         // BySlopeBand
         .then(Action::Custom(Box::new(|world| {
-            world.resource_mut::<saddle_world_terrain::TerrainDebugConfig>().color_mode =
-                TerrainDebugColorMode::BySlopeBand;
+            support::set_debug_color_mode(world, TerrainDebugColorMode::BySlopeBand);
         })))
         .then(Action::WaitFrames(4))
         .then(Action::Screenshot("debug_mode_slope_band".into()))
         .then(Action::WaitFrames(1))
         // Natural — reset to default
         .then(Action::Custom(Box::new(|world| {
-            world.resource_mut::<saddle_world_terrain::TerrainDebugConfig>().color_mode =
-                TerrainDebugColorMode::Natural;
+            support::set_debug_color_mode(world, TerrainDebugColorMode::Natural);
         })))
         .then(Action::WaitFrames(4))
         .then(Action::Screenshot("debug_mode_natural".into()))
@@ -436,13 +401,7 @@ fn terrain_async_throttle() -> Scenario {
         .then(Action::WaitFrames(1))
         // Teleport to the far corner — this triggers a large batch of new chunk builds.
         .then(Action::Custom(Box::new(|world| {
-            let focus = support::entity_by_name(world, "Lab Focus").unwrap();
-            world
-                .entity_mut(focus)
-                .insert(Transform::from_xyz(900.0, 0.0, 900.0));
-            world
-                .entity_mut(focus)
-                .insert(GlobalTransform::from(Transform::from_xyz(900.0, 0.0, 900.0)));
+            support::set_focus_position(world, Vec3::new(900.0, 0.0, 900.0));
         })))
         // After a few frames, pending_chunks should have risen (new area to build).
         .then(Action::WaitFrames(8))
@@ -496,20 +455,14 @@ fn terrain_slope_band() -> Scenario {
         })))
         // Enable slope-band debug color so the screenshot shows slope zones.
         .then(Action::Custom(Box::new(|world| {
+            support::set_debug_color_mode(world, TerrainDebugColorMode::BySlopeBand);
             let mut debug = world.resource_mut::<saddle_world_terrain::TerrainDebugConfig>();
-            debug.color_mode = TerrainDebugColorMode::BySlopeBand;
             debug.show_focus_rings = true;
             debug.show_sample_probes = true;
         })))
         // Position focus on a relatively flat plateau area.
         .then(Action::Custom(Box::new(|world| {
-            let focus = support::entity_by_name(world, "Lab Focus").unwrap();
-            world
-                .entity_mut(focus)
-                .insert(Transform::from_xyz(440.0, 0.0, 440.0));
-            world
-                .entity_mut(focus)
-                .insert(GlobalTransform::from(Transform::from_xyz(440.0, 0.0, 440.0)));
+            support::set_focus_position(world, Vec3::new(440.0, 0.0, 440.0));
         })))
         .then(Action::WaitFrames(30))
         .then(Action::Custom(Box::new(|world| {
@@ -527,13 +480,7 @@ fn terrain_slope_band() -> Scenario {
         .then(Action::WaitFrames(1))
         // Move focus to a position that tends to be on a slope in the generated dataset.
         .then(Action::Custom(Box::new(|world| {
-            let focus = support::entity_by_name(world, "Lab Focus").unwrap();
-            world
-                .entity_mut(focus)
-                .insert(Transform::from_xyz(260.0, 0.0, 560.0));
-            world
-                .entity_mut(focus)
-                .insert(GlobalTransform::from(Transform::from_xyz(260.0, 0.0, 560.0)));
+            support::set_focus_position(world, Vec3::new(260.0, 0.0, 560.0));
         })))
         .then(Action::WaitFrames(30))
         .then(Action::Custom(Box::new(|world| {
@@ -590,21 +537,15 @@ fn terrain_chunk_lifecycle() -> Scenario {
             });
         })))
         .then(Action::Custom(Box::new(|world| {
+            support::set_debug_color_mode(world, TerrainDebugColorMode::ByChunkState);
             let mut debug = world.resource_mut::<saddle_world_terrain::TerrainDebugConfig>();
-            debug.color_mode = TerrainDebugColorMode::ByChunkState;
             debug.show_chunk_bounds = true;
         })))
         .then(Action::Screenshot("lifecycle_stable".into()))
         .then(Action::WaitFrames(1))
         // Teleport focus to trigger a new batch of chunk loads.
         .then(Action::Custom(Box::new(|world| {
-            let focus = support::entity_by_name(world, "Lab Focus").unwrap();
-            world
-                .entity_mut(focus)
-                .insert(Transform::from_xyz(150.0, 0.0, 800.0));
-            world
-                .entity_mut(focus)
-                .insert(GlobalTransform::from(Transform::from_xyz(150.0, 0.0, 800.0)));
+            support::set_focus_position(world, Vec3::new(150.0, 0.0, 800.0));
         })))
         // After a couple of frames the system must have queued new chunks.
         .then(Action::WaitFrames(6))
@@ -764,13 +705,7 @@ fn example_async_streaming() -> Scenario {
                 ready_chunks: diagnostics.ready_chunks,
                 pending_chunks: diagnostics.pending_chunks,
             });
-            let focus = support::entity_by_name(world, "Lab Focus").unwrap();
-            world
-                .entity_mut(focus)
-                .insert(Transform::from_xyz(900.0, 0.0, 900.0));
-            world
-                .entity_mut(focus)
-                .insert(GlobalTransform::from(Transform::from_xyz(900.0, 0.0, 900.0)));
+            support::set_focus_position(world, Vec3::new(900.0, 0.0, 900.0));
         })))
         .then(Action::WaitFrames(10))
         .then(assertions::custom("async scene still tracks chunks after teleport", |world| {
@@ -857,13 +792,7 @@ fn example_mountain_range() -> Scenario {
             pane.height_scale >= 160.0 && pane.visual_radius >= 240.0
         }))
         .then(Action::Custom(Box::new(|world| {
-            let focus = support::entity_by_name(world, "Lab Focus").unwrap();
-            world
-                .entity_mut(focus)
-                .insert(Transform::from_xyz(240.0, 0.0, 280.0));
-            world
-                .entity_mut(focus)
-                .insert(GlobalTransform::from(Transform::from_xyz(240.0, 0.0, 280.0)));
+            support::set_focus_position(world, Vec3::new(240.0, 0.0, 280.0));
         })))
         .then(Action::WaitFrames(40))
         .then(Action::Custom(Box::new(|world| {
